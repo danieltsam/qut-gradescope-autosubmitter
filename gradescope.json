@@ -1,8 +1,8 @@
 {
-  "course": "CAB202",
-  "assignment": "Tutorial 08",
-  "file": "submission.zip",
-  "bundle": ["*"],
   "username": "n12345678",
-  "password": "yourQUTpassword"
+  "password": "yourpassword",
+  "course": "cab201",
+  "assignment": "t6q1",
+  "file": "submission.zip",
+  "bundle": ["*"]
 }
