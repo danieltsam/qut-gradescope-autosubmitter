@@ -12,6 +12,9 @@ I built this script to save time, reduce mistakes, and make assignment submissio
 
 </div>
 
+
+https://github.com/user-attachments/assets/d26a9b0a-efd2-47ca-a623-808727735b32
+
 ## What It Does
 
 - Bundles your project files into a zip archive
@@ -21,12 +24,6 @@ I built this script to save time, reduce mistakes, and make assignment submissio
 - Prints a clear submission receipt in the terminal with timestamp and file info
 - Automatically polls for and displays your grade (once available) in the terminal
 - Leaves the browser open for visual confirmation
-
-
-
-https://github.com/user-attachments/assets/d26a9b0a-efd2-47ca-a623-808727735b32
-
-
 
 ## Setup
 
