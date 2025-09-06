@@ -1,0 +1,65 @@
+name: Scheduled Gradescope Submission
+
+on:
+  schedule:
+    # Run every day at 11:59 PM (useful for daily assignments)
+    - cron: '59 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for recent changes
+      id: changes
+      run: |
+        # Check if there are commits in the last 24 hours
+        RECENT_COMMITS=$(git log --since="24 hours ago" --oneline | wc -l)
+        echo "recent_commits=$RECENT_COMMITS" >> $GITHUB_OUTPUT
+        
+        if [ "$RECENT_COMMITS" -gt 0 ]; then
+          echo "Found $RECENT_COMMITS recent commits, proceeding with submission"
+          echo "should_submit=true" >> $GITHUB_OUTPUT
+        else
+          echo "No recent commits found, skipping submission"
+          echo "should_submit=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Set up Python
+      if: steps.changes.outputs.should_submit == 'true'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      if: steps.changes.outputs.should_submit == 'true'
+      run: |
+        python -m pip install --upgrade pip
+        pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
+        playwright install chromium
+        
+    - name: Create config file
+      if: steps.changes.outputs.should_submit == 'true'
+      run: |
+        cat > gradescope.yml << EOF
+        course: ${{ vars.GRADESCOPE_COURSE }}
+        assignment: ${{ vars.GRADESCOPE_ASSIGNMENT }}
+        file: submission.zip
+        bundle: ['*']
+        notify_when_graded: false
+        headless: true
+        EOF
+        
+    - name: Submit to Gradescope
+      if: steps.changes.outputs.should_submit == 'true'
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+      run: |
+        gradescope submit --headless --no-grade-wait --fresh-login
+
+

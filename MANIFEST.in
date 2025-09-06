@@ -1,0 +1,14 @@
+include README.md
+include LICENSE
+include GITHUB_ACTIONS_SETUP.md
+include pyproject.toml
+
+recursive-include examples *.yml *.yaml *.example
+recursive-include .github *.yml *.yaml
+
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
+global-exclude *.zip
+
+

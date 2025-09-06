@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qut-gradescope-autosubmitter"
+version = "1.0.8"
+description = "Automated Gradescope submission tool for QUT students - Currently on TestPyPI"
+readme = "README.md"
+authors = [
+    {name = "Daniel Sam", email = "daniel.sam@gmx.com"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "playwright>=1.20.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/danieltsam/qut-gradescope-autosubmitter"
+Repository = "https://github.com/danieltsam/qut-gradescope-autosubmitter"
+Issues = "https://github.com/danieltsam/qut-gradescope-autosubmitter/issues"
+
+[project.scripts]
+gradescope = "gradescope_autosubmitter.cli:main"
+gs-submit = "gradescope_autosubmitter.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gradescope_autosubmitter*"]
+
