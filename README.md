@@ -30,30 +30,10 @@ Secure • Fast • Reliable • CI/CD Ready
 - **📊 Grade Monitoring**: Automatic grade retrieval and display
 - **🌐 Cross-platform**: Windows, macOS, Linux support
 
-## ⚠️ Important Disclaimers
-
-**Legal & Responsibility:**
-- This tool is provided "as-is" without any warranties or guarantees
-- Users are solely responsible for their use of this tool and any consequences
-- The authors and contributors are not responsible for:
-  - Misuse of the tool or violation of university policies
-  - Failed submissions, missed deadlines, or academic consequences
-  - Any issues arising from automated submission attempts
-  - Rate limiting or account restrictions imposed by QUT or Gradescope
-
-**Rate Limiting & Usage:**
-- **Fresh Login Mode**: Using `--fresh-login` or `always_fresh_login: true` creates new sessions every time
-- **Manual Login Mode**: Using `--manual-login` also triggers new login requests to QUT SSO
-- Both modes may trigger rate limiting on QUT SSO if used excessively
-- **Recommended**: Use session persistence (default) to minimize SSO requests
-- **Best Practice**: Avoid running multiple submissions in rapid succession
-
-**University Policies:**
-- Ensure your use complies with QUT's academic integrity policies
-- This tool is intended for legitimate assignment submission automation only
-- Users are responsible for understanding and following their institution's rules
 
 ## ⚠️ Important Limitations
+
+if qut or gradescope change their sso/ui, this tool breaks :)
 
 > **🚨 CRITICAL REQUIREMENT**: This tool **requires at least one prior manual submission** to each assignment before it can be used for automation.
 
@@ -68,7 +48,7 @@ Secure • Fast • Reliable • CI/CD Ready
 2. Submit your assignment once (any file is fine)
 3. Use this tool for all future submissions to that assignment
 
-> **💡 Why this limitation exists**: Gradescope's interface changes based on whether an assignment has previous submissions, making automation impossible without this initial step.
+> **💡 Why this limitation exists**: Gradescope's interface changes based on whether an assignment has previous submissions, and i just havent looked into automatting this initial step (working on it).
 
 ## 🚀 Installation
 
@@ -86,7 +66,7 @@ playwright install chromium
 > ```bash
 > pip install playwright pyyaml python-dotenv click
 > pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
-playwright install chromium
+> playwright install chromium
 > ```
 
 ### Platform Notes
@@ -157,15 +137,6 @@ echo 'export GRADESCOPE_USERNAME="n12345678"' >> ~/.bashrc
 echo 'export GRADESCOPE_PASSWORD="your_password"' >> ~/.bashrc
 source ~/.bashrc
 ```
-
-**🔐 Security & Persistence Comparison:**
-
-| Method | Security Level | Convenience | Duration | When to Use |
-|--------|---------------|-------------|----------|-------------|
-| **Session env vars** | 🟢 High | 🟡 Medium | Terminal session | Quick testing |
-| **.env file** | 🟡 Medium | 🟢 High | Until deleted | Development projects |
-| **Permanent env vars** | 🟡 Medium | 🟢 High | Forever | Power users |
-| **Manual login** | 🟢 Highest | 🟡 Medium | None | Maximum security |
 
 ### 3. Configure Assignment
 
@@ -351,7 +322,7 @@ gradescope cleanup  # Clear saved session data
 
 ## 🤖 GitHub Actions
 
-> ⚠️ **Status**: GitHub Actions integration is **not yet fully tested** and may require additional configuration. Use with caution.
+> ⚠️ **Status**: GitHub Actions integration is **not yet fully tested** and may require additional configuration. Use with caution. doesnt work currently
 
 Automate submissions on every commit!
 
@@ -556,31 +527,27 @@ python -m twine upload dist/*
 - PyYAML (automatically installed)
 - Click (automatically installed)
 
-## 🤝 Contributing
+## ⚠️ Important Disclaimers
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Run linting and tests
-6. Submit a pull request
+**Legal & Responsibility:**
+- This tool is provided "as-is" without any warranties or guarantees
+- Users are solely responsible for their use of this tool and any consequences
+- The authors and contributors are not responsible for:
+  - Misuse of the tool or violation of university policies
+  - Failed submissions, missed deadlines, or academic consequences
+  - Any issues arising from automated submission attempts
+  - Rate limiting or account restrictions imposed by QUT or Gradescope
 
-## ⚠️ Disclaimer
+**Rate Limiting & Usage:**
+- **Fresh Login Mode**: Using `--fresh-login` or `always_fresh_login: true` creates new sessions every time
+- **Manual Login Mode**: Using `--manual-login` also triggers new login requests to QUT SSO
+- Both modes may trigger rate limiting on QUT SSO if used excessively
+- **Recommended**: Use session persistence (default) to minimize SSO requests
+- **Best Practice**: Avoid running multiple submissions in rapid succession
 
-This tool is not affiliated with QUT or Gradescope. Use responsibly and in accordance with your institution's academic integrity policies.
-
-## 🆘 Support
-
-- 📚 [Documentation](GITHUB_ACTIONS_SETUP.md)
-- 🐛 [Issue Tracker](https://github.com/yourusername/qut-gradescope-autosubmitter/issues)
-- 💬 [Discussions](https://github.com/yourusername/qut-gradescope-autosubmitter/discussions)
-
+**University Policies:**
+- Ensure your use complies with QUT's academic integrity policies
+- This tool is intended for legitimate assignment submission automation only
+- Users are responsible for understanding and following their institution's rules
 ---
 
-<div align="center">
-
-**Made with ❤️ for QUT students**
-
-[⭐ Star this repo](https://github.com/yourusername/qut-gradescope-autosubmitter) if it helped you!
-
-</div>
