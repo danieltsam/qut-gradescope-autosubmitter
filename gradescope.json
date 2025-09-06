@@ -1,0 +1,8 @@
+{
+  "username": "n12345678",
+  "password": "yourpassword",
+  "course": "cab201",
+  "assignment": "t6q1",
+  "file": "submission.zip",
+  "bundle": ["*"]
+}
