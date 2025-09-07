@@ -39,8 +39,17 @@ jobs:
       if: steps.changes.outputs.should_submit == 'true'
       run: |
         python -m pip install --upgrade pip
+        # Install Rich and other dependencies first to avoid TestPyPI issues
+        pip install playwright pyyaml python-dotenv click rich
         pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
         playwright install chromium
+        
+    - name: System check
+      if: steps.changes.outputs.should_submit == 'true'
+      run: |
+        echo "🔍 Running scheduled system diagnostics..."
+        gradescope doctor
+        echo "✅ System check completed"
         
     - name: Create config file
       if: steps.changes.outputs.should_submit == 'true'
@@ -53,6 +62,14 @@ jobs:
         notify_when_graded: false
         headless: true
         EOF
+        echo "📄 Config file created for scheduled submission"
+        
+    - name: Validate configuration
+      if: steps.changes.outputs.should_submit == 'true'
+      run: |
+        echo "🔧 Validating configuration..."
+        gradescope validate
+        echo "✅ Configuration valid"
         
     - name: Submit to Gradescope
       if: steps.changes.outputs.should_submit == 'true'
@@ -60,6 +77,8 @@ jobs:
         GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
         GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
       run: |
+        echo "🕰️ Starting scheduled Gradescope submission..."
         gradescope submit --headless --no-grade-wait --fresh-login
+        echo "✅ Scheduled submission completed"
 
 

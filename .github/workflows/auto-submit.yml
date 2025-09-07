@@ -31,8 +31,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        # Install Rich and other dependencies first to avoid TestPyPI issues
+        pip install playwright pyyaml python-dotenv click rich
         pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
         playwright install chromium
+        
+    - name: System check
+      run: |
+        echo "🔍 Running system diagnostics..."
+        gradescope doctor
+        echo "✅ System check completed"
         
     - name: Create config file
       run: |
@@ -44,13 +52,22 @@ jobs:
         notify_when_graded: false
         headless: true
         EOF
+        echo "📄 Config file created"
+        
+    - name: Validate configuration
+      run: |
+        echo "🔧 Validating configuration..."
+        gradescope validate
+        echo "✅ Configuration valid"
         
     - name: Submit to Gradescope
       env:
         GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
         GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
       run: |
+        echo "🚀 Starting Gradescope submission..."
         gradescope submit --headless --no-grade-wait --fresh-login
+        echo "✅ Submission completed"
         
     - name: Upload submission artifact
       uses: actions/upload-artifact@v3

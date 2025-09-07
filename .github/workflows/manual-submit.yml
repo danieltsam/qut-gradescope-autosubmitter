@@ -1,0 +1,104 @@
+name: Manual Gradescope Submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      course:
+        description: 'Course code (e.g., cab201)'
+        required: true
+        default: 'cab201'
+        type: string
+      assignment:
+        description: 'Assignment name (e.g., t6q1)'
+        required: true
+        default: 't6q1'
+        type: string
+      file_patterns:
+        description: 'File patterns to include (comma-separated)'
+        required: false
+        default: '*'
+        type: string
+      zip_name:
+        description: 'Output zip filename'
+        required: false
+        default: 'submission.zip'
+        type: string
+      wait_for_grade:
+        description: 'Wait for grade after submission'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Install Rich and other dependencies first to avoid TestPyPI issues
+        pip install playwright pyyaml python-dotenv click rich
+        pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
+        playwright install chromium
+        
+    - name: System check
+      run: |
+        echo "🔍 Running manual submission diagnostics..."
+        gradescope doctor
+        echo "✅ System check completed"
+        
+    - name: Create config file
+      run: |
+        # Parse file patterns
+        IFS=',' read -ra PATTERNS <<< "${{ github.event.inputs.file_patterns }}"
+        
+        cat > gradescope.yml << EOF
+        course: ${{ github.event.inputs.course }}
+        assignment: ${{ github.event.inputs.assignment }}
+        zip_name: ${{ github.event.inputs.zip_name }}
+        bundle: [$(printf "'%s'," "${PATTERNS[@]}" | sed 's/,$//')]
+        notify_when_graded: ${{ github.event.inputs.wait_for_grade }}
+        headless: true
+        EOF
+        
+        echo "📄 Manual config file created:"
+        cat gradescope.yml
+        
+    - name: Validate configuration
+      run: |
+        echo "🔧 Validating manual configuration..."
+        gradescope validate
+        echo "✅ Configuration valid"
+        
+    - name: Submit to Gradescope
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+      run: |
+        echo "🎯 Starting manual Gradescope submission..."
+        echo "Course: ${{ github.event.inputs.course }}"
+        echo "Assignment: ${{ github.event.inputs.assignment }}"
+        echo "File patterns: ${{ github.event.inputs.file_patterns }}"
+        
+        if [ "${{ github.event.inputs.wait_for_grade }}" = "true" ]; then
+          gradescope submit --headless --fresh-login
+        else
+          gradescope submit --headless --no-grade-wait --fresh-login
+        fi
+        echo "✅ Manual submission completed"
+        
+    - name: Upload submission artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: manual-submission-${{ github.event.inputs.course }}-${{ github.event.inputs.assignment }}-${{ github.run_number }}
+        path: ${{ github.event.inputs.zip_name }}
+        retention-days: 30

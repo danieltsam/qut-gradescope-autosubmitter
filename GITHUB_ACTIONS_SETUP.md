@@ -1,240 +1,579 @@
-# GitHub Actions Setup Guide (not working yet)
+# Automation Setup Guide: Git Hooks & GitHub Actions
 
-This guide explains how to set up automated Gradescope submissions using GitHub Actions.
+This comprehensive guide explains how to set up automated Gradescope submissions using Git hooks (local automation) and GitHub Actions (cloud automation).
 
-## 🚀 Quick Setup
+## 🎯 Automation Overview
 
-### 1. Repository Secrets
+The QUT Gradescope Auto Submitter supports multiple automation approaches:
 
-Add these secrets to your GitHub repository (`Settings > Secrets and variables > Actions`):
+1. **🪝 Git Hooks** - Local automation that runs on every commit
+2. **🤖 GitHub Actions** - Cloud-based automation for pushes, schedules, and manual triggers  
+3. **🔄 Combined Setup** - Use both for maximum automation coverage
 
-- `GRADESCOPE_USERNAME`: Your QUT student number (e.g., `n12345678`)
-- `GRADESCOPE_PASSWORD`: Your QUT password
+---
 
-### 2. Repository Variables
+## 🪝 Git Hooks (Local Automation)
 
-Add these variables to your GitHub repository (`Settings > Secrets and variables > Actions`):
+Git hooks automatically run Gradescope submissions when you commit code locally. This provides immediate feedback and works entirely on your machine.
 
-- `GRADESCOPE_COURSE`: Course code (e.g., `cab201`)
-- `GRADESCOPE_ASSIGNMENT`: Assignment name (e.g., `t6q1`)
+### 🚀 Quick Setup
 
-### 3. Workflow Files
-
-The following workflow files are included:
-
-#### `auto-submit.yml` - Submit on Every Push
-- Triggers on push to main/master branch
-- Automatically submits your latest code
-- Perfect for continuous assignment submissions
-
-#### `scheduled-submit.yml` - Daily Scheduled Submissions
-- Runs daily at 11:59 PM
-- Only submits if there are commits in the last 24 hours
-- Great for assignment deadlines
-
-#### `test-package.yml` - Package Testing
-- Tests the package across multiple OS and Python versions
-- Ensures code quality and compatibility
-
-## 📋 Configuration Options
-
-### Custom Configuration
-
-Create a `gradescope.yml` file in your repository root:
-
-```yaml
-course: cab201
-assignment: t6q1
-file: submission.zip
-bundle: ['*.py', '*.cpp', '*.h']  # Customize file patterns
-notify_when_graded: false  # Don't wait for grades in CI
-headless: true  # Always run headless in CI
+**Interactive Setup (Recommended):**
+```bash
+gradescope hooks
 ```
 
-### Environment Variables Override
+This opens an interactive menu with all options:
+- Install full hooks (submit + wait for grade)
+- Install quick hooks (submit only, no grade wait)
+- View current hooks
+- Remove hooks
 
-You can override config values using environment variables in your workflows:
+### 📋 Hook Types
 
-```yaml
-env:
-  GRADESCOPE_COURSE: cab202
-  GRADESCOPE_ASSIGNMENT: assignment-1
-  GRADESCOPE_FILE: my-submission.zip
+#### Full Hooks (With Grade Monitoring)
+- **Command**: `gradescope submit --headless`
+- **Behavior**: Submit to Gradescope and wait for grade feedback
+- **Use Case**: Interactive development when you want immediate grade results
+- **Time**: 30 seconds to several minutes (depending on grading speed)
+
+#### Quick Hooks (Submit Only)
+- **Command**: `gradescope submit --headless --no-grade-wait`
+- **Behavior**: Submit to Gradescope but don't wait for grades
+- **Use Case**: Rapid development cycles, CI/CD pipelines
+- **Time**: Usually under 10 seconds
+
+### ⏰ Hook Timing
+
+#### Pre-commit Hooks
+- **When**: Runs **before** your commit is finalized
+- **Advantage**: Ensures submission happens even if you forget
+- **Consideration**: May delay your commit process
+
+#### Post-commit Hooks  
+- **When**: Runs **after** your commit is saved
+- **Advantage**: Doesn't block the commit process
+- **Consideration**: Submission happens after commit is already saved
+
+### 🔧 Manual Hook Setup
+
+If you prefer manual setup:
+
+#### 1. Create Hooks Directory
+```bash
+mkdir -p .git/hooks
 ```
 
-## 🔒 Security Best Practices
+#### 2. Create Pre-commit Hook (Full Mode)
+```bash
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+# Pre-commit hook for Gradescope submissions (with grade monitoring)
+echo "Pre-commit: Checking for gradescope.yml..."
 
-1. **Never commit credentials** - Use GitHub Secrets only
-2. **Use repository variables** for non-sensitive config (course, assignment)
-3. **Enable branch protection** to prevent accidental submissions
-4. **Review workflow runs** regularly
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running submission with grade monitoring..."
+    gradescope submit --headless
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission and grading completed successfully"
+    else
+        echo "Gradescope submission failed"
+        echo "Commit will proceed anyway..."
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+EOF
 
-## 🛠️ Customization Examples
-
-### Submit Only Specific File Types
-
-```yaml
-- name: Create config file
-  run: |
-    cat > gradescope.yml << EOF
-    course: ${{ vars.GRADESCOPE_COURSE }}
-    assignment: ${{ vars.GRADESCOPE_ASSIGNMENT }}
-    bundle: ['*.py', '*.txt', 'src/**/*.cpp']
-    EOF
+chmod +x .git/hooks/pre-commit
 ```
 
-### Submit Only on Specific Branches
+#### 3. Create Post-commit Hook (Quick Mode)
+```bash
+cat > .git/hooks/post-commit << 'EOF'
+#!/bin/bash
+# Post-commit hook for Gradescope submissions (quick mode)
+echo "Post-commit: Checking for gradescope.yml..."
+
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running quick submission..."
+    gradescope submit --headless --no-grade-wait
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission successful (not waiting for grade)"
+    else
+        echo "Gradescope submission failed"
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+EOF
+
+chmod +x .git/hooks/post-commit
+```
+
+### 📱 Example Workflows
+
+#### Development with Full Hooks
+```bash
+git add solution.py
+git commit -m "Implement bubble sort algorithm"
+# → Pre-commit hook runs
+# → Submits to Gradescope
+# → Waits for grade
+# → Shows: "Grade returned after 0:45: 15.0 / 15.0 (100%)"
+# → Commit completes
+```
+
+#### Rapid Development with Quick Hooks
+```bash
+git add *.py
+git commit -m "Work in progress - testing approach"
+# → Post-commit hook runs
+# → Quick submission to Gradescope
+# → "Gradescope submission successful (not waiting for grade)"
+# → Continue coding immediately
+```
+
+### 🛠️ Hook Management
+
+#### View Current Hooks
+```bash
+gradescope hooks
+# Choose option 4: "View current hooks"
+```
+
+#### Remove Hooks
+```bash
+gradescope hooks
+# Choose option 5: "Remove hooks"
+```
+
+#### Manual Hook Removal
+```bash
+rm -f .git/hooks/pre-commit
+rm -f .git/hooks/post-commit
+```
+
+### 💡 Best Practices
+
+1. **Choose Your Mode**: Use full hooks for final submissions, quick hooks for development
+2. **Test First**: Run `gradescope submit` manually before setting up hooks
+3. **Hybrid Approach**: Use post-commit quick hooks for development, manually run full submissions for grades
+4. **Team Projects**: Document your hook setup in your project README
+
+---
+
+## 🤖 GitHub Actions (Cloud Automation)
+
+GitHub Actions provide cloud-based automation that runs in GitHub's servers. Perfect for team projects, scheduled submissions, and CI/CD integration.
+
+### 🚀 Quick Setup
+
+**All-in-One Setup Script:**
+```bash
+python setup_automation.py
+```
+
+This script provides an interactive setup for:
+- GitHub repository secrets and variables
+- Workflow files
+- Configuration
+- Git integration
+
+### 🔐 Repository Configuration
+
+#### 1. Repository Secrets
+
+Navigate to `Settings > Secrets and variables > Actions` and add:
+
+- **`GRADESCOPE_USERNAME`**: Your QUT student number (e.g., `n12345678`)
+- **`GRADESCOPE_PASSWORD`**: Your QUT password
+
+#### 2. Repository Variables
+
+Add these variables in the same location:
+
+- **`GRADESCOPE_COURSE`**: Your course code (e.g., `cab201`)
+- **`GRADESCOPE_ASSIGNMENT`**: Your assignment name (e.g., `t6q1`)
+
+### 📁 Workflow Files
+
+Create these files in `.github/workflows/`:
+
+#### Auto-Submit on Push
+**File**: `.github/workflows/auto-submit.yml`
 
 ```yaml
+name: Auto Submit to Gradescope
+
 on:
   push:
-    branches: [ main, submission ]  # Only submit from these branches
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright pyyaml python-dotenv click rich
+        pip install qut-gradescope-autosubmitter
+        playwright install chromium
+    
+    - name: System check
+      run: |
+        echo "Running system diagnostics..."
+        gradescope doctor
+    
+    - name: Validate configuration
+      run: |
+        echo "Validating gradescope.yml..."
+        gradescope validate
+    
+    - name: Submit to Gradescope
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+        GRADESCOPE_COURSE: ${{ vars.GRADESCOPE_COURSE }}
+        GRADESCOPE_ASSIGNMENT: ${{ vars.GRADESCOPE_ASSIGNMENT }}
+      run: |
+        echo "Submitting assignment to Gradescope..."
+        gradescope submit --headless
 ```
 
-### Submit Only When Specific Files Change
+#### Scheduled Daily Submissions
+**File**: `.github/workflows/scheduled-submit.yml`
 
 ```yaml
+name: Scheduled Submit to Gradescope
+
 on:
-  push:
-    paths:
-      - 'src/**'
-      - '*.py'
-      - '!README.md'
+  schedule:
+    # Run daily at 6 PM UTC (adjust for your timezone)
+    - cron: '0 18 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright pyyaml python-dotenv click rich
+        pip install qut-gradescope-autosubmitter
+        playwright install chromium
+    
+    - name: System check
+      run: |
+        echo "Running system diagnostics..."
+        gradescope doctor
+    
+    - name: Validate configuration
+      run: |
+        echo "Validating gradescope.yml..."
+        gradescope validate
+    
+    - name: Submit to Gradescope
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+        GRADESCOPE_COURSE: ${{ vars.GRADESCOPE_COURSE }}
+        GRADESCOPE_ASSIGNMENT: ${{ vars.GRADESCOPE_ASSIGNMENT }}
+      run: |
+        echo "Submitting assignment to Gradescope..."
+        gradescope submit --headless
 ```
 
-### Manual Trigger with Parameters
+#### Manual Trigger with Parameters
+**File**: `.github/workflows/manual-submit.yml`
 
 ```yaml
+name: Manual Submit to Gradescope
+
 on:
   workflow_dispatch:
     inputs:
       assignment:
-        description: 'Assignment name'
-        required: true
-        default: 't6q1'
+        description: 'Assignment name (overrides config)'
+        required: false
+        type: string
       course:
-        description: 'Course code'
-        required: true
-        default: 'cab201'
+        description: 'Course code (overrides config)'
+        required: false
+        type: string
+      file_patterns:
+        description: 'File patterns to include (comma-separated)'
+        required: false
+        default: '*.py,*.java,*.cpp,*.c,*.js,*.ts'
+        type: string
+      wait_for_grade:
+        description: 'Wait for grade result'
+        required: false
+        default: true
+        type: boolean
+      headless:
+        description: 'Run in headless mode'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright pyyaml python-dotenv click rich
+        pip install qut-gradescope-autosubmitter
+        playwright install chromium
+    
+    - name: System check
+      run: |
+        echo "Running system diagnostics..."
+        gradescope doctor
+    
+    - name: Validate configuration
+      run: |
+        echo "Validating gradescope.yml..."
+        gradescope validate
+    
+    - name: Submit to Gradescope
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+        GRADESCOPE_COURSE: ${{ vars.GRADESCOPE_COURSE }}
+        GRADESCOPE_ASSIGNMENT: ${{ vars.GRADESCOPE_ASSIGNMENT }}
+      run: |
+        cmd="gradescope submit"
+        
+        if [ "${{ inputs.headless }}" = "true" ]; then
+          cmd="$cmd --headless"
+        fi
+        
+        if [ "${{ inputs.wait_for_grade }}" = "false" ]; then
+          cmd="$cmd --no-grade-wait"
+        fi
+        
+        if [ -n "${{ inputs.assignment }}" ]; then
+          cmd="$cmd --assignment '${{ inputs.assignment }}'"
+        fi
+        
+        if [ -n "${{ inputs.course }}" ]; then
+          cmd="$cmd --course '${{ inputs.course }}'"
+        fi
+        
+        if [ -n "${{ inputs.file_patterns }}" ]; then
+          cmd="$cmd --files '${{ inputs.file_patterns }}'"
+        fi
+        
+        echo "Running: $cmd"
+        eval $cmd
 ```
 
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **"Config file not found"**
-   - Ensure `gradescope.yml` exists in repository root
-   - Check workflow creates config correctly
-
-2. **"Missing credentials"**
-   - Verify secrets are set correctly
-   - Check secret names match exactly
-
-3. **"Course/Assignment not found"**
-   - Verify course and assignment names match Gradescope
-   - Use partial matching (e.g., 'cab201' matches 'CAB201_24se2')
-
-4. **"Browser timeout"**
-   - QUT SSO might be slow, increase timeouts
-   - Check if QUT systems are operational
-
-### Debug Mode
-
-Add debug output to your workflow:
+#### Matrix Submissions (Multiple Assignments)
+**File**: `.github/workflows/matrix-submit.yml`
 
 ```yaml
-- name: Debug submission
-  env:
-    GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
-    GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
-  run: |
-    gradescope doctor
-    gradescope validate
-    gradescope submit --headless --no-grade-wait
+name: Matrix Submit to Gradescope
+
+on:
+  workflow_dispatch:
+    inputs:
+      assignments:
+        description: 'JSON array of assignments to submit'
+        required: false
+        default: '[{"course":"cab201","assignment":"t6q1"},{"course":"cab201","assignment":"t6q2"}]'
+        type: string
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        assignment: ${{ fromJson(inputs.assignments || '[{"course":"cab201","assignment":"t6q1"}]') }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright pyyaml python-dotenv click rich
+        pip install qut-gradescope-autosubmitter
+        playwright install chromium
+    
+    - name: Submit to Gradescope
+      env:
+        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
+        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
+      run: |
+        echo "Submitting ${{ matrix.assignment.course }}/${{ matrix.assignment.assignment }}..."
+        gradescope submit --headless \
+          --course "${{ matrix.assignment.course }}" \
+          --assignment "${{ matrix.assignment.assignment }}"
 ```
 
-## 📊 Monitoring
+### 🔧 Configuration Setup
 
-### View Submission History
-
-- Go to `Actions` tab in your repository
-- Click on workflow runs to see logs
-- Download submission artifacts
-
-### Notifications
-
-Enable GitHub notifications for:
-- Workflow failures
-- Successful submissions
-- Security alerts
-
-## ⚡ Advanced Usage
-
-### Matrix Submissions
-
-Submit to multiple courses/assignments:
+Create `gradescope.yml` in your repository root:
 
 ```yaml
-strategy:
-  matrix:
-    include:
-      - course: cab201
-        assignment: t6q1
-      - course: cab202
-        assignment: assignment-1
-
-steps:
-  - name: Submit to ${{ matrix.course }}
-    env:
-      GRADESCOPE_COURSE: ${{ matrix.course }}
-      GRADESCOPE_ASSIGNMENT: ${{ matrix.assignment }}
+course: "cab201"
+assignment: "t6q1"
+files:
+  - "*.py"
+  - "*.java"
+  - "*.cpp"
+  - "*.c"
+  - "requirements.txt"
+  - "README.md"
+exclude:
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - "node_modules/"
 ```
 
-### Conditional Submissions
+### 📱 Usage Examples
 
-Only submit during semester:
-
-```yaml
-- name: Check if in semester
-  id: semester
-  run: |
-    CURRENT_MONTH=$(date +%m)
-    if [[ $CURRENT_MONTH -ge 2 && $CURRENT_MONTH -le 6 ]] || [[ $CURRENT_MONTH -ge 7 && $CURRENT_MONTH -le 11 ]]; then
-      echo "in_semester=true" >> $GITHUB_OUTPUT
-    else
-      echo "in_semester=false" >> $GITHUB_OUTPUT
-    fi
-
-- name: Submit
-  if: steps.semester.outputs.in_semester == 'true'
-  run: gradescope submit
+#### Automatic on Push
+```bash
+git add solution.py
+git push origin main
+# → GitHub Action triggers automatically
+# → Submits to Gradescope in the cloud
+# → Check Actions tab for results
 ```
 
-## 🎯 Best Practices
+#### Manual Trigger
+1. Go to your repository on GitHub
+2. Click **Actions** tab
+3. Select **Manual Submit to Gradescope**
+4. Click **Run workflow**
+5. Fill in parameters (optional)
+6. Click **Run workflow**
 
-1. **Test locally first** before enabling auto-submission
-2. **Use branch protection** to prevent accidental pushes
-3. **Monitor quota usage** - GitHub has action minute limits
-4. **Set up notifications** for failed submissions
-5. **Review logs regularly** to ensure submissions work
-6. **Keep credentials secure** - rotate passwords periodically
+#### Scheduled Submissions
+- Automatically runs daily at the scheduled time
+- Perfect for deadline reminders
+- Check Actions tab for logs
 
-## 📝 Example Repository Structure
+---
 
+## 🔄 Combined Setup: Git Hooks + GitHub Actions
+
+For maximum automation coverage, use both:
+
+### Local Development Flow
+```bash
+# Work locally with Git hooks
+git add *.py
+git commit -m "Implement solution"
+# → Git hook submits locally
+# → Get immediate feedback
+
+# Push to share with team
+git push origin main
+# → GitHub Action submits from cloud
+# → Team can see results in Actions tab
 ```
-my-assignment/
-├── .github/
-│   └── workflows/
-│       ├── auto-submit.yml
-│       └── scheduled-submit.yml
-├── src/
-│   ├── main.py
-│   └── utils.py
-├── gradescope.yml
-├── README.md
-└── requirements.txt
+
+### Configuration
+
+1. **Git Hooks**: Quick local feedback
+2. **GitHub Actions**: Team visibility and backup submissions
+3. **Scheduled Actions**: Deadline reminders
+
+### Best Practices
+
+1. **Local Hooks**: Use quick mode for development
+2. **GitHub Actions**: Use full mode for official submissions
+3. **Documentation**: Document your automation setup for teammates
+4. **Testing**: Test both locally and in GitHub before deadlines
+
+---
+
+## 🛠️ Troubleshooting
+
+### Git Hooks Issues
+
+**Hook not running:**
+```bash
+# Check if hook file exists and is executable
+ls -la .git/hooks/
+chmod +x .git/hooks/pre-commit
+chmod +x .git/hooks/post-commit
 ```
 
-This setup provides automated, secure, and reliable Gradescope submissions integrated with your development workflow! 🎉
+**Unicode errors on Windows:**
+```bash
+# Hooks should not contain emojis or special characters
+# Use the interactive setup to create clean hooks
+gradescope hooks
+```
 
+### GitHub Actions Issues
 
+**Credentials not working:**
+- Verify secrets are set correctly in repository settings
+- Check that variable names match exactly
+- Ensure QUT credentials are valid
+
+**Workflow not triggering:**
+- Check branch names in workflow files
+- Verify workflow files are in `.github/workflows/`
+- Check Actions tab for error messages
+
+**Submission failures:**
+- Run `gradescope doctor` locally first
+- Check that `gradescope.yml` is valid
+- Verify course and assignment names
+
+### General Issues
+
+**Configuration problems:**
+```bash
+gradescope validate  # Check configuration
+gradescope doctor    # Check system requirements
+```
+
+**Session issues:**
+```bash
+gradescope cleanup   # Clear saved sessions
+```
+
+For more help, check the main [README.md](README.md) or open an issue on GitHub.

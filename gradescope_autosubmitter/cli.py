@@ -110,6 +110,7 @@ def show_help(ctx):
     commands_table.add_row("init", "Initialize gradescope.yml config")
     commands_table.add_row("validate", "Validate configuration")
     commands_table.add_row("ui", "Customize UI colors and settings")
+    commands_table.add_row("hooks", "Set up Git hooks for automation")
     
     # Create options table
     options_table = Table(title="Global Options", box=box.ROUNDED)
@@ -796,6 +797,242 @@ def credentials():
             break
         except Exception as e:
             log_error(f"Error: {e}")
+            break
+
+
+@cli.command()
+def hooks():
+    """Set up Git hooks for automated submissions."""
+    from pathlib import Path
+    import stat
+    
+    # Check if we're in a git repository
+    if not Path('.git').exists():
+        log_error("Not in a Git repository. Please run this command from the root of a Git repository.")
+        return
+    
+    hooks_dir = Path('.git/hooks')
+    hooks_dir.mkdir(exist_ok=True)
+    
+    from .rich_console import get_colors
+    colors = get_colors()
+    
+    def show_hooks_menu():
+        import os
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+        console.print(f"[bold {colors['primary']}]Git Hooks Setup[/bold {colors['primary']}]\n")
+        
+        # Check existing hooks
+        pre_commit_exists = (hooks_dir / 'pre-commit').exists()
+        post_commit_exists = (hooks_dir / 'post-commit').exists()
+        
+        console.print("[bold]Available Git Hooks:[/bold]")
+        console.print(f"[{colors['primary']}]1[/{colors['primary']}] Install pre-commit hook (submit + wait for grade) {'[' + colors['success'] + ']✓ Installed[/' + colors['success'] + ']' if pre_commit_exists else ''}")
+        console.print(f"[{colors['primary']}]2[/{colors['primary']}] Install post-commit hook (submit + wait for grade) {'[' + colors['success'] + ']✓ Installed[/' + colors['success'] + ']' if post_commit_exists else ''}")
+        console.print(f"[{colors['primary']}]3[/{colors['primary']}] Install quick hooks (submit only, no grade wait)")
+        console.print(f"[{colors['primary']}]4[/{colors['primary']}] View current hooks")
+        console.print(f"[{colors['primary']}]5[/{colors['primary']}] Remove hooks")
+        console.print(f"[{colors['primary']}]6[/{colors['primary']}] Exit")
+        
+        return pre_commit_exists, post_commit_exists
+    
+    def create_pre_commit_hook():
+        hook_content = '''#!/bin/bash
+# Pre-commit hook for Gradescope submissions
+echo "Pre-commit: Checking for gradescope.yml..."
+
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running submission with grade monitoring..."
+    gradescope submit --headless
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission and grading completed successfully"
+    else
+        echo "Gradescope submission failed"
+        echo "Commit will proceed anyway..."
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+'''
+        hook_file = hooks_dir / 'pre-commit'
+        hook_file.write_text(hook_content, encoding='utf-8')
+        hook_file.chmod(hook_file.stat().st_mode | stat.S_IEXEC)
+        log_success("Pre-commit hook installed successfully")
+    
+    def create_post_commit_hook():
+        hook_content = '''#!/bin/bash
+# Post-commit hook for Gradescope submissions
+echo "Post-commit: Checking for gradescope.yml..."
+
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running submission with grade monitoring..."
+    gradescope submit --headless
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission and grading completed successfully"
+    else
+        echo "Gradescope submission failed"
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+'''
+        hook_file = hooks_dir / 'post-commit'
+        hook_file.write_text(hook_content, encoding='utf-8')
+        hook_file.chmod(hook_file.stat().st_mode | stat.S_IEXEC)
+        log_success("Post-commit hook installed successfully")
+    
+    def create_quick_pre_commit_hook():
+        hook_content = '''#!/bin/bash
+# Pre-commit hook for Gradescope submissions (quick mode)
+echo "Pre-commit: Checking for gradescope.yml..."
+
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running quick submission..."
+    gradescope submit --headless --no-grade-wait
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission successful (not waiting for grade)"
+    else
+        echo "Gradescope submission failed"
+        echo "Commit will proceed anyway..."
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+'''
+        hook_file = hooks_dir / 'pre-commit'
+        hook_file.write_text(hook_content, encoding='utf-8')
+        hook_file.chmod(hook_file.stat().st_mode | stat.S_IEXEC)
+        log_success("Quick pre-commit hook installed successfully")
+    
+    def create_quick_post_commit_hook():
+        hook_content = '''#!/bin/bash
+# Post-commit hook for Gradescope submissions (quick mode)
+echo "Post-commit: Checking for gradescope.yml..."
+
+if [ -f "gradescope.yml" ]; then
+    echo "Found gradescope.yml, running quick submission..."
+    gradescope submit --headless --no-grade-wait
+    if [ $? -eq 0 ]; then
+        echo "Gradescope submission successful (not waiting for grade)"
+    else
+        echo "Gradescope submission failed"
+    fi
+else
+    echo "No gradescope.yml found, skipping submission"
+fi
+'''
+        hook_file = hooks_dir / 'post-commit'
+        hook_file.write_text(hook_content, encoding='utf-8')
+        hook_file.chmod(hook_file.stat().st_mode | stat.S_IEXEC)
+        log_success("Quick post-commit hook installed successfully")
+    
+    def setup_quick_hooks():
+        """Set up quick hooks submenu."""
+        import os
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+        console.print(f"[bold {colors['primary']}]Quick Git Hooks Setup[/bold {colors['primary']}]\n")
+        console.print("[dim]Quick hooks submit to Gradescope but don't wait for grades[/dim]\n")
+        
+        console.print(f"[{colors['primary']}]1[/{colors['primary']}] Install quick pre-commit hook")
+        console.print(f"[{colors['primary']}]2[/{colors['primary']}] Install quick post-commit hook") 
+        console.print(f"[{colors['primary']}]3[/{colors['primary']}] Install both quick hooks")
+        console.print(f"[{colors['primary']}]4[/{colors['primary']}] Back to main menu")
+        
+        try:
+            choice = Prompt.ask("Choose option", choices=["1", "2", "3", "4"])
+            
+            if choice == "1":
+                create_quick_pre_commit_hook()
+            elif choice == "2":
+                create_quick_post_commit_hook()
+            elif choice == "3":
+                create_quick_pre_commit_hook()
+                create_quick_post_commit_hook()
+            # choice == "4" falls through to return
+        except (ValueError, KeyboardInterrupt):
+            pass
+    
+    def view_hooks():
+        import os
+        os.system('cls' if os.name == 'nt' else 'clear')
+        
+        console.print(f"[bold {colors['primary']}]Current Git Hooks[/bold {colors['primary']}]\n")
+        
+        for hook_name in ['pre-commit', 'post-commit']:
+            hook_file = hooks_dir / hook_name
+            if hook_file.exists():
+                console.print(f"[{colors['success']}]✓[/{colors['success']}] {hook_name}")
+                try:
+                    content = hook_file.read_text(encoding='utf-8')
+                    if 'gradescope' in content.lower() or 'gradescope submit' in content.lower():
+                        console.print(f"  [{colors['primary']}]→[/{colors['primary']}] Contains Gradescope automation")
+                    else:
+                        console.print(f"  [{colors['warning']}]→[/{colors['warning']}] Custom hook (not Gradescope)")
+                except:
+                    console.print(f"  [{colors['error']}]→[/{colors['error']}] Cannot read hook")
+            else:
+                console.print(f"[{colors['error']}]✗[/{colors['error']}] {hook_name} (not installed)")
+        
+        Prompt.ask("\nPress Enter to continue", default="")
+    
+    def remove_hooks():
+        removed = 0
+        for hook_name in ['pre-commit', 'post-commit']:
+            hook_file = hooks_dir / hook_name
+            if hook_file.exists():
+                try:
+                    content = hook_file.read_text(encoding='utf-8')
+                    # Look for multiple identifying strings to catch our hooks
+                    if ('gradescope' in content.lower() or 
+                        'gradescope submit' in content.lower() or
+                        'Gradescope submissions' in content):
+                        hook_file.unlink()
+                        log_success(f"Removed {hook_name} hook")
+                        removed += 1
+                    else:
+                        log_warning(f"Skipped {hook_name} (not a Gradescope hook)")
+                except:
+                    log_error(f"Failed to process {hook_name}")
+        
+        if removed == 0:
+            log_warning("No Gradescope hooks found to remove")
+        else:
+            log_success(f"Removed {removed} Gradescope hook(s)")
+    
+    # Main menu loop
+    while True:
+        try:
+            pre_commit_exists, post_commit_exists = show_hooks_menu()
+            
+            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4", "5", "6"])
+            
+            if choice == "1":
+                if pre_commit_exists:
+                    if Prompt.ask("Pre-commit hook already exists. Overwrite?", choices=["y", "n"], default="n") == "y":
+                        create_pre_commit_hook()
+                else:
+                    create_pre_commit_hook()
+            elif choice == "2":
+                if post_commit_exists:
+                    if Prompt.ask("Post-commit hook already exists. Overwrite?", choices=["y", "n"], default="n") == "y":
+                        create_post_commit_hook()
+                else:
+                    create_post_commit_hook()
+            elif choice == "3":
+                setup_quick_hooks()
+            elif choice == "4":
+                view_hooks()
+            elif choice == "5":
+                remove_hooks()
+                Prompt.ask("\nPress Enter to continue", default="")
+            elif choice == "6":
+                console.print("[dim]Git hooks setup complete![/dim]")
+                break
+                
+        except KeyboardInterrupt:
+            console.print("\n[dim]Git hooks setup cancelled[/dim]")
             break
 
 

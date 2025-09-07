@@ -342,11 +342,35 @@ Fine-tune your experience:
 - **Compact Mode**: Reduce visual clutter
 - **Step Timings**: Display individual step completion times
 
-## 🤖 CI/CD Automation
+## 🤖 Automation
 
-Automate submissions with GitHub Actions, Git hooks, or other CI/CD systems.
+### Git Hooks (Local Automation)
 
-> **📖 Setup Guide:** See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for complete automation setup instructions.
+Automatically submit on every commit with Git hooks:
+
+```bash
+gradescope hooks
+```
+
+**Hook Options:**
+- **Full Hooks**: Submit and wait for grade feedback
+- **Quick Hooks**: Submit without waiting for grades
+- **Pre-commit**: Submit before each commit
+- **Post-commit**: Submit after each commit
+
+**Example workflow:**
+```bash
+git add .
+git commit -m "Fix algorithm implementation"
+# → Automatic submission to Gradescope
+# → Grade feedback in terminal (full mode)
+```
+
+### GitHub Actions (Cloud Automation)
+
+Set up cloud-based automation with GitHub Actions for team projects and scheduled submissions.
+
+> **📖 Complete Guide:** See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for detailed automation setup instructions.
 
 ## 📖 Examples
 
