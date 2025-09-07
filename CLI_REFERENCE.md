@@ -35,6 +35,32 @@ Options:
   --no-session-save      Don't save credentials to session env vars
 ```
 
+### Submit Options & Progress Display
+
+The tool shows detailed progress with beautiful timestamps and colors:
+
+```
+[15:42:31.45] ✓ Created: submission.zip (25 files, 0.1 MB)
+[15:42:31.89] ✓ Persistent context created with user data directory
+> [1/5] Checking login status...
+[15:42:33.12] ✓ Using existing session
+    → Completed in 1.8s
+> [2/5] Finding course 'cab201'...
+[15:42:33.35] ✓ Found course: CAB201_24se2
+    → Completed in 0.2s
+> [3/5] Finding assignment 't6q1'...
+[15:42:33.78] ✓ Found assignment: T6Q1: Linked List (Formative)
+    → Completed in 0.4s
+> [4/5] Submitting file...
+[15:42:34.12] INFO Resubmission detected - clicking resubmit button...
+[15:42:34.45] INFO Uploading: submission.zip
+[15:42:35.23] INFO Clicking Upload...
+    → Completed in 1.8s
+> [5/5] Waiting for grade...
+Grade returned after 0:42: 15.0 / 15.0 (100%)
+[15:42:38.67] ✓ Submission completed! (Total: 7.2s)
+```
+
 ### Examples
 
 ```bash
@@ -48,6 +74,53 @@ gradescope submit --course cab202 --assignment "Lab 5" --headless
 gradescope submit -b "*.java" -b "*.xml" --file java-submission.zip
 
 # Quick submission with credentials (not recommended)
+gradescope submit -u n12345678 -p password --headless
+```
+
+## 📖 Project Examples
+
+### Basic Python Project
+
+```yaml
+# gradescope.yml
+course: cab201
+assignment: "Assignment 1"
+bundle: ['*.py', 'requirements.txt']
+```
+
+### C++ Project
+
+```yaml
+# gradescope.yml  
+course: cab202
+assignment: t6q1
+bundle: ['*.cpp', '*.h', 'Makefile']
+```
+
+### Complex Project Structure
+
+```yaml
+# gradescope.yml
+course: cab301
+assignment: "Final Project" 
+bundle: 
+  - 'src/**/*.py'
+  - 'tests/**/*.py'
+  - 'docs/**/*.md'
+  - 'requirements.txt'
+  - 'README.md'
+```
+
+### Command Line Overrides
+
+```bash
+# Override config file settings
+gradescope submit --course cab202 --assignment "Lab 5" --headless
+
+# Submit specific files with custom colors
+gradescope submit -b "*.java" -b "*.xml" --file java-submission.zip
+
+# Quick submission with credentials
 gradescope submit -u n12345678 -p password --headless
 ```
 
