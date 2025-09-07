@@ -11,16 +11,11 @@ from typing import List, Tuple, Optional
 from pathlib import Path
 
 from playwright.async_api import async_playwright
-
-
-def timestamp() -> str:
-    """Generate a timestamp string."""
-    return datetime.now().strftime("%H:%M:%S.%f")[:-2]
-
-
-def log(msg: str) -> None:
-    """Log a message with timestamp."""
-    print(f"[{timestamp()}] {msg}")
+from .rich_console import (
+    log_info, log_success, log_warning, log_error, log_step,
+    create_submission_summary, create_progress_bar, StepTracker,
+    console, get_colors
+)
 
 
 class SessionManager:
@@ -36,7 +31,7 @@ class SessionManager:
         self.fresh_login = fresh_login
         
         if fresh_login and self.session_dir.exists():
-            log("Using fresh login (clearing session)")
+            log_info("Using fresh login (clearing session)")
             shutil.rmtree(self.session_dir)
     
     async def get_browser_context(self, headless: bool = True):
@@ -45,14 +40,14 @@ class SessionManager:
         
         if self.fresh_login:
             # Use regular browser without persistence
-            log("🆕 Using fresh browser context (no persistence)")
+            log_info("🆕 Using fresh browser context (no persistence)")
             browser = await p.chromium.launch(headless=headless)
             context = await browser.new_context()
             return context, p, browser
         else:
             # Use persistent context
             self.session_dir.mkdir(parents=True, exist_ok=True)
-            log(f"Using persistent session: {self.session_dir}")
+            log_info(f"Using persistent session: {self.session_dir}")
             
             # Use persistent context for session management
             context = await p.chromium.launch_persistent_context(
@@ -65,7 +60,7 @@ class SessionManager:
             )
             
             # Log context info - persistent contexts don't have .browser
-            log(f"Persistent context created with user data directory")
+            log_success("Persistent context created with user data directory")
             return context, p, None
     
 
@@ -126,7 +121,7 @@ class SessionManager:
         """Manually clean up session data."""
         if self.session_dir.exists():
             shutil.rmtree(self.session_dir)
-            log("Session data cleared")
+            log_success("Session data cleared")
 
 
 class GradescopeSubmitter:
@@ -172,18 +167,27 @@ class GradescopeSubmitter:
             raise ValueError(f"❌ No files matched the patterns: {file_patterns}")
         
         with zipfile.ZipFile(output_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for full_path, arcname in matched_files:
-                zipf.write(full_path, arcname)
-                print(f"📦 Added: {arcname}")
+            with create_progress_bar("Creating submission bundle...") as progress:
+                task = progress.add_task("Bundling files", total=len(matched_files))
+                
+                for full_path, arcname in matched_files:
+                    zipf.write(full_path, arcname)
+                    from .rich_console import get_colors
+                    colors = get_colors()
+                    console.print(f"[dim]Added:[/dim] [{colors['primary']}]{arcname}[/{colors['primary']}]")
+                    progress.advance(task)
         
-        print(f"\n✅ Created: {output_filename} ({len(matched_files)} files)")
+        # Get file size
+        file_size = os.path.getsize(output_filename)
+        size_mb = file_size / (1024 * 1024)
+        
+        log_success(f"Created: {output_filename} ({len(matched_files)} files, {size_mb:.1f} MB)")
     
-    def print_submission_summary(self, course_label: str, assignment_label: str, file: str) -> None:
+    def print_submission_summary(self, course_label: str, assignment_label: str, file: str, grade: str = None) -> None:
         """Print a formatted submission summary."""
-        print("\n🧾 Submission Receipt:")
-        print(f'✅ Submitted to "{course_label} > {assignment_label}"')
-        print(f"🕒 Time: {datetime.now().strftime('%I:%M %p, %B %d')}")
-        print(f"📁 File: {file}")
+        console.print()  # Add spacing
+        panel = create_submission_summary(course_label, assignment_label, file, grade)
+        console.print(panel)
     
     async def submit_to_gradescope(
         self, 
@@ -193,27 +197,29 @@ class GradescopeSubmitter:
         notify_when_graded: bool = True
     ) -> Tuple[str, str]:
         """Submit a file to Gradescope."""
-        context, playwright, browser = await self.session_manager.get_browser_context(self.headless)
+        # Initialize step tracker
+        total_steps = 5 if notify_when_graded else 4
+        steps = StepTracker(total_steps, manual_completion=True)
         
-        # Session workflow:
-        # 1. Always check if we're logged in (unless fresh_login is forced)
-        # 2. Session check uses SAML redirect to detect login state
-        # 3. If logged in, skip login process
-        # 4. If not logged in, perform full login
+        context, playwright, browser = await self.session_manager.get_browser_context(self.headless)
         
         # Create page first so we can reuse it
         page = await context.new_page()
         
+        # Step 1: Login/Session Check
+        steps.next_step("Checking login status...")
         needs_login = True
         current_url = None
         if not self.session_manager.fresh_login:
             # Always check session status - this loads any existing session data
             is_logged_in, current_url = await self.session_manager.is_logged_in(context, page)
             if is_logged_in:
-                log("Using existing session...")
+                steps.complete_step("Using existing session")
                 needs_login = False
             else:
-                log("🔐 Logging in...")
+                log_info("🔐 Logging in...")
+        else:
+            log_info("🔐 Fresh login requested")
         
         try:
             # Set up error handling for minor network issues
@@ -222,26 +228,25 @@ class GradescopeSubmitter:
             
             if self.manual_login:
                 # Manual login mode - let user login themselves
-                log("Opening QUT SSO page for manual login...")
+                log_info("Opening QUT SSO page for manual login...")
                 await page.goto("https://www.gradescope.com.au/auth/saml/qut")
                 
-                log("Please log in manually in the browser window...")
-                log("Waiting for you to complete login...")
+                log_warning("Please log in manually in the browser window...")
+                log_info("Waiting for you to complete login...")
                 
                 # Wait for login to complete by checking for course boxes
                 try:
                     await page.wait_for_selector("a.courseBox", timeout=300000)  # 5 minutes
-                    log("🔓 Manual login detected as complete!")
+                    steps.complete_step("🔓 Manual login detected as complete!")
                 except:
                     raise Exception("❌ Manual login timed out or failed")
                     
             elif needs_login:
-                log("Navigating directly to QUT SSO...")
                 # Skip Gradescope homepage, go straight to QUT login
                 await page.goto("https://www.gradescope.com.au/auth/saml/qut")
                 
                 if "qut.edu.au" in page.url:
-                    log("QUT login detected. Entering credentials...")
+                    log_info("QUT login detected. Entering credentials...")
                     await page.wait_for_selector('input[name="username"]')
                     await page.fill('input[name="username"]', self.username)
                     await page.fill('input[name="password"]', self.password)
@@ -262,7 +267,7 @@ class GradescopeSubmitter:
                             try:
                                 if await page.locator(selector).is_visible(timeout=2000):
                                     await page.check(selector)
-                                    log("✅ Remember Me enabled")
+                                    log_success("✅ Remember Me enabled")
                                     break
                             except:
                                 continue
@@ -271,24 +276,26 @@ class GradescopeSubmitter:
                     
                     await page.click('button#kc-login')
                     await page.wait_for_selector("a.courseBox")
-                    log("🔓 QUT login complete")
+                    steps.complete_step("🔓 QUT login complete")
             else:
                 if current_url and "gradescope.com.au" in current_url:
-                    log(f"Already on Gradescope from session check: {current_url}")
+                    log_info(f"Already on Gradescope from session check")
                     # We're already on the right page, just wait for course boxes
                     try:
                         await page.wait_for_selector("a.courseBox", timeout=5000)
                     except:
                         # If course boxes aren't ready, we might need to refresh
-                        log("Refreshing page to ensure it's ready...")
+                        log_info("Refreshing page to ensure it's ready...")
                         await page.reload()
                         await page.wait_for_selector("a.courseBox")
                 else:
-                    log("Navigating to Gradescope (already logged in)...")
+                    log_info("Navigating to Gradescope (already logged in)...")
                     await page.goto("https://www.gradescope.com.au")
                     await page.wait_for_selector("a.courseBox")
             
-            log("Finding course...")
+            # Step 2: Find Course
+            colors = get_colors()
+            steps.next_step(f"Finding course [{colors['primary']}]'{course}'[/{colors['primary']}]...")
             courses = await page.query_selector_all("a.courseBox")
             course_label = ""
             
@@ -301,7 +308,7 @@ class GradescopeSubmitter:
                 if course.lower() in shortname.lower():
                     href = await c.get_attribute("href")
                     course_label = shortname
-                    log(f"✅ Found: {course_label}")
+                    steps.complete_step(f"Found course: {course_label}")
                     await page.goto(f"https://www.gradescope.com.au{href}")
                     await page.wait_for_selector('a[href*="/assignments/"]')
                     break
@@ -309,7 +316,8 @@ class GradescopeSubmitter:
             if not course_label:
                 raise Exception(f"❌ Could not find course matching '{course}'")
             
-            log("Finding assignment...")
+            # Step 3: Find Assignment
+            steps.next_step(f"Finding assignment [{colors['primary']}]'{assignment}'[/{colors['primary']}]...")
             assignment_label = ""
             
             # Try finding assignment links first
@@ -319,7 +327,7 @@ class GradescopeSubmitter:
                 if assignment.lower() in label.lower():
                     href = await a.get_attribute("href")
                     assignment_label = label
-                    log(f"✅ Found: {assignment_label}")
+                    steps.complete_step(f"Found assignment: {assignment_label}")
                     await page.goto(f"https://www.gradescope.com.au{href}")
                     await page.wait_for_selector('button.js-submitAssignment')
                     break
@@ -331,54 +339,107 @@ class GradescopeSubmitter:
                     label = (await b.inner_text()).strip()
                     if assignment.lower() in label.lower():
                         assignment_label = label
-                        log(f"Found assignment (button only): {assignment_label}")
+                        steps.complete_step(f"Found assignment (button): {assignment_label}")
                         break
             
             if not assignment_label:
                 raise Exception(f"❌ Could not find assignment matching '{assignment}'")
             
-            log("Starting submission...")
+            # Step 4: Submit File  
+            steps.next_step("Submitting file...")
+            
+            # Check if this is a first-time submission (button) or resubmission (link)
             resubmit_button = page.locator('button.js-submitAssignment:has-text("Resubmit")')
             submit_button = page.locator(f'button.js-submitAssignment:has-text("{assignment_label}")')
             
+            is_first_submission = await submit_button.is_visible() and not await resubmit_button.is_visible()
+            
             if await resubmit_button.is_visible():
+                log_info("Resubmission detected - clicking resubmit button...")
                 await resubmit_button.click()
+                await page.wait_for_selector('input#submission_method_upload')
+                await page.check('input#submission_method_upload')
+                
+                # Handle resubmission file input
+                file_input = page.locator('input[type="file"]')
+                log_info("Waiting for file input to appear...")
+                try:
+                    await file_input.wait_for(timeout=10000, state="attached")
+                except Exception as e:
+                    raise e
+                
+                log_info(f"Uploading: {file}")
+                await file_input.set_input_files(file)
+                await page.wait_for_timeout(1000)
+                
+                upload_button = page.locator('button.tiiBtn-primary.js-submitCode')
+                log_info("Clicking Upload...")
+                await upload_button.wait_for(timeout=5000)
+                await upload_button.click()
+                
             elif await submit_button.is_visible():
+                log_info("First submission detected - clicking submit button...")
                 await submit_button.click()
+                
+                # Wait for modal to open
+                log_info("Waiting for submission modal to open...")
+                await page.wait_for_selector('dialog#submit-code-modal', timeout=10000)
+                
+                # Ensure upload method is selected
+                await page.wait_for_selector('input#submission_method_upload')
+                await page.check('input#submission_method_upload')
+                
+                # Handle first-time submission - use same approach as resubmissions
+                log_info("Handling first-time submission...")
+                
+                # Handle the dropzone with file chooser interception
+                log_info("Setting up file chooser interception for dropzone...")
+                dropzone = page.locator('.js-dropzone')
+                await dropzone.wait_for(timeout=5000)
+                
+                # Set up file chooser interception before clicking dropzone
+                log_info("Waiting for file chooser and setting files...")
+                async with page.expect_file_chooser() as fc_info:
+                    # Click the dropzone to trigger the file chooser
+                    await dropzone.click()
+                
+                # Handle the file chooser when it appears
+                file_chooser = await fc_info.value
+                await file_chooser.set_files(file)
+                log_success(f"Set files via file chooser: {file}")
+                
+                # Wait a moment for the file to be processed by dropzone
+                await page.wait_for_timeout(2000)
+                
+                # Check if the dropzone shows the file preview
+                try:
+                    file_preview = page.locator('.js-dropzonePreview')
+                    preview_container = page.locator('.js-dropzonePreviewContainer')
+                    if await file_preview.is_visible() or await preview_container.is_visible():
+                        log_success("✅ File appears in dropzone preview")
+                    else:
+                        log_warning("⚠️ File not visible in dropzone preview")
+                except:
+                    log_warning("⚠️ Could not check dropzone preview")
+                
+                # Click the upload button in the modal
+                upload_button = page.locator('button.tiiBtn-primary.js-submitCode')
+                log_info("Clicking Upload...")
+                await upload_button.wait_for(timeout=5000)
+                await upload_button.click()
+                
             else:
                 raise Exception("❌ Could not locate a submission button.")
             
-            await page.wait_for_selector('input#submission_method_upload')
-            await page.check('input#submission_method_upload')
-            
-            file_input = page.locator('input[type="file"]')
-            log("Waiting for file input to appear...")
-            try:
-                await file_input.wait_for(timeout=10000, state="attached")
-            except Exception as e:
-                if "strict mode violation" in str(e) and "resolved to 3 elements" in str(e):
-                    raise Exception("❌ This assignment has no previous submissions. Please make at least one manual submission through the Gradescope web interface before using this CLI tool.")
-                else:
-                    raise e
-            
-            log(f"Uploading: {file}")
-            await file_input.set_input_files(file)
-            await page.wait_for_timeout(1000)
-            
-            upload_button = page.locator('button.tiiBtn-primary.js-submitCode')
-            log("Clicking Upload...")
-            await upload_button.wait_for(timeout=5000)
-            await upload_button.click()
-            
             await page.wait_for_timeout(3000)
-            log("✅ File submitted successfully!")
+            steps.complete("File submitted successfully!")
             self.print_submission_summary(course_label, assignment_label, file)
             
             if notify_when_graded:
                 await self._wait_for_grade(page)
             
             if not self.headless:
-                log("Leaving the browser open. Press Enter to exit.")
+                log_info("Leaving the browser open. Press Enter to exit.")
                 await asyncio.get_event_loop().run_in_executor(None, input)
             
             return course_label, assignment_label
@@ -386,12 +447,12 @@ class GradescopeSubmitter:
         except Exception as e:
             # Handle browser closure gracefully
             if "Target page, context or browser has been closed" in str(e):
-                log("❌ Browser was closed manually during submission")
-                log("💡 Tip: Keep the browser window open during submission")
+                log_error("Browser was closed manually during submission")
+                log_info("Tip: Keep the browser window open during submission")
                 raise Exception("❌ Submission interrupted - browser was closed")
             elif "Protocol error" in str(e) and "Target closed" in str(e):
-                log("❌ Browser connection lost during submission")
-                log("💡 Tip: Check your internet connection and try again")
+                log_error("Browser connection lost during submission")
+                log_info("Tip: Check your internet connection and try again")
                 raise Exception("❌ Submission failed - browser connection lost")
             else:
                 # Re-raise other exceptions with original message
@@ -422,38 +483,48 @@ class GradescopeSubmitter:
     
     async def _wait_for_grade(self, page) -> None:
         """Wait for and display the grade when available."""
-        log("Waiting for grade to appear...")
+        from .rich_console import create_spinner_progress
+        
+        log_info("Waiting for grade to appear...")
         grade_selector = "div.submissionOutlineHeader--totalPoints"
         max_attempts = 48  # 4 minutes @ 5s interval
         start_time = time.time()
         
         try:
-            for i in range(max_attempts):
-                await page.reload()
-                grade_el = await page.query_selector(grade_selector)
+            with create_spinner_progress("Waiting for grade...") as progress:
+                task = progress.add_task("Checking grade", total=None)
                 
-                elapsed = int(time.time() - start_time)
-                mins, secs = divmod(elapsed, 60)
-                timer_display = f"{mins:02d}:{secs:02d}"
-                
-                if grade_el:
-                    grade_text = (await grade_el.inner_text()).strip()
-                    if grade_text and not grade_text.startswith("-"):
-                        bold_grade = f"\033[1m{grade_text}\033[0m"
-                        print()
-                        log(f"🏆 Grade returned after {timer_display}: {bold_grade}")
-                        break
-                
-                await asyncio.sleep(5)
-            else:
-                log(f"\n⌛ Timed out after {max_attempts * 5} seconds with no grade available.")
+                for i in range(max_attempts):
+                    await page.reload()
+                    grade_el = await page.query_selector(grade_selector)
+                    
+                    elapsed = int(time.time() - start_time)
+                    mins, secs = divmod(elapsed, 60)
+                    timer_display = f"{mins:02d}:{secs:02d}"
+                    
+                    # Update progress with timer
+                    progress.update(task, description=f"Checking grade ({timer_display})")
+                    
+                    if grade_el:
+                        grade_text = (await grade_el.inner_text()).strip()
+                        if grade_text and not grade_text.startswith("-"):
+                            progress.stop()
+                            from .rich_console import get_colors
+                            colors = get_colors()
+                            log_success(f"Grade returned after {timer_display}: [bold {colors['success']}]{grade_text}[/bold {colors['success']}]")
+                            break
+                    
+                    await asyncio.sleep(5)
+                else:
+                    progress.stop()
+                    log_warning(f"Timed out after {max_attempts * 5} seconds with no grade available.")
         except Exception as e:
             if "Target page, context or browser has been closed" in str(e):
-                log("❌ Browser was closed while waiting for grade")
-                log("💡 Grade monitoring stopped - submission was successful")
+                log_error("Browser was closed while waiting for grade")
+                log_info("Grade monitoring stopped - submission was successful")
             elif "Protocol error" in str(e) and "Target closed" in str(e):
-                log("❌ Browser connection lost while waiting for grade")
-                log("💡 Grade monitoring stopped - submission was successful")
+                log_error("Browser connection lost while waiting for grade")
+                log_info("Grade monitoring stopped - submission was successful")
             else:
-                log(f"⚠️ Grade monitoring stopped due to: {e}")
-                log("💡 Submission was successful, check Gradescope manually for grade")
+                log_warning(f"Grade monitoring stopped due to: {e}")
+                log_info("Submission was successful, check Gradescope manually for grade")

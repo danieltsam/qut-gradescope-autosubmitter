@@ -56,3 +56,6 @@ test_*.py
 # Playwright
 playwright-report/
 test-results/
+
+#specstory
+.specstory/

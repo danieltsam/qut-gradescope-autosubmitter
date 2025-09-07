@@ -152,7 +152,5 @@ class Config:
             f.write("# $env:GRADESCOPE_PASSWORD = \"your_password\"\n")
             f.write("\n")
         
-        print(f"✅ Created example config: {path}")
-        print("Edit this file with your course and assignment details.")
 
 

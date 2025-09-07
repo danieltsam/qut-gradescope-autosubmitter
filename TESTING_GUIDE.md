@@ -54,7 +54,25 @@ gradescope validate
 
 ### ✅ 4. Credential Setup Tests
 
-**Option A: Environment Variables**
+**Option A: User-level .env (Recommended)**
+```bash
+# Test credential management interface
+gradescope credentials
+
+# Should show menu:
+# 1. Manage saved credentials (.env, user-level)
+# 2. Environment variables (session/system)
+# 3. Exit
+
+# Choose: 1 → 1 (Save/update credentials)
+# Enter your QUT username and password when prompted
+# Should show: ✅ Credentials saved to [user-level path]
+
+# Test credential detection
+gradescope doctor  # Should show ✅ for credentials
+```
+
+**Option B: Environment Variables**
 ```bash
 # Windows PowerShell
 $env:GRADESCOPE_USERNAME = "your_qut_username"
@@ -68,18 +86,39 @@ export GRADESCOPE_PASSWORD="your_qut_password"
 gradescope doctor  # Should show ✅ for credentials
 ```
 
-**Option B: Interactive Prompts**
+**Test Credential Management Features:**
 ```bash
-# Don't set env vars, let it prompt you
+# Update saved credentials
+gradescope credentials → 1 → 1 (should re-prompt)
+
+# Delete saved credentials  
+gradescope credentials → 1 → 2 (should remove .env file)
+
+# Get environment variable help
+gradescope credentials → 2 → 1 (setup commands)
+gradescope credentials → 2 → 2 (clear commands)
+```
+
+**Test Submit-time Credential Prompts:**
+```bash
+# Clear all credentials first
+gradescope credentials → 1 → 2  # Delete .env if exists
 unset GRADESCOPE_USERNAME GRADESCOPE_PASSWORD  # Linux/Mac
 Remove-Item Env:GRADESCOPE_USERNAME, Env:GRADESCOPE_PASSWORD  # Windows PS
+
+# Run submit - should prompt with options:
+gradescope submit --no-grade-wait
+# Should show:
+# 1) Enter and save to .env (local project file)
+# 2) Enter once for this run  
+# 3) Cancel
 ```
 
 ### ✅ 5. Session Management Tests
 
 **Test 1: Default Session Persistence**
 ```bash
-# First submission (should login)
+# Initial submission (should login)
 gradescope submit --headless --course "your_course" --assignment "your_assignment"
 
 # Should show:

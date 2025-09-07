@@ -1,4 +1,3 @@
-
 # QUT Gradescope Auto Submitter
 
 <div align="center">
@@ -7,11 +6,11 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**🔒 CLI tool for QUT Gradescope submissions**
+**🎨 Beautiful CLI tool for QUT Gradescope submissions**
 
-Secure • Fast • Reliable • CI/CD Ready
+Secure • Fast • Customizable • CI/CD Ready
 
-[Installation](#installation) • [Quick Start](#quick-start) • [GitHub Actions](#github-actions) • [Documentation](#documentation)
+[Installation](#installation) • [Quick Start](#quick-start) • [How It Works](#how-it-works) • [Documentation](#documentation)
 
 > **💡 Why I built this:** As a QUT student, I was frustrated with the repetitive click-heavy Gradescope submission process. I enjoy CLI tools and automation, so I built this to streamline my workflow and make submissions as simple as `gradescope submit`.
 
@@ -21,34 +20,37 @@ Secure • Fast • Reliable • CI/CD Ready
 
 ## ✨ Features
 
-- **🔐 Secure**: Environment variables, no plaintext passwords
-- **⚡ Fast**: Automated file bundling and submission
-- **🛠️ CLI Tool**: Global command-line interface after pip install
-- **📁 YAML Config**: Modern configuration with validation
-- **🤖 CI/CD Ready**: GitHub Actions workflows included
-- **🎯 Smart Matching**: Fuzzy course/assignment name matching
-- **📊 Grade Monitoring**: Automatic grade retrieval and display
-- **🌐 Cross-platform**: Windows, macOS, Linux support
+### 🎨 **Beautiful Interface**
+- **Rich Terminal UI**: Gorgeous panels, tables, and progress indicators
+- **Custom Colors**: Personalize your experience with dynamic color themes
+- **Smart Progress**: Real-time step tracking with timestamps and timing
+- **Responsive Design**: Clean output that adapts to your terminal
 
+### 🔐 **Security & Credentials**
+- **Multiple Options**: Environment variables, .env files, or interactive prompts
+- **User-Level Storage**: Credentials work across all your projects
+- **Session Persistence**: Stay logged in between submissions
+- **Manual Login Mode**: Maximum security with browser-based authentication
+
+### ⚡ **Automation & Performance**
+- **Smart Bundling**: Automatic file detection with .gitignore support
+- **Fuzzy Matching**: Find courses and assignments with partial names
+- **Grade Monitoring**: Wait for and display grades automatically
+- **CI/CD Ready**: Perfect for GitHub Actions and automation
+
+### 🛠️ **Developer Experience**
+- **Interactive Setup**: Guided configuration and credential management
+- **Rich Help System**: Beautiful help pages and command documentation
+- **System Diagnostics**: Built-in doctor command for troubleshooting
+- **Cross-Platform**: Windows, macOS, Linux support
 
 ## ⚠️ Important Limitations
 
-if qut or gradescope change their sso/ui, this tool breaks :)
+If QUT or Gradescope change their SSO/UI, this tool breaks :)
 
-> **🚨 CRITICAL REQUIREMENT**: This tool **requires at least one prior manual submission** to each assignment before it can be used for automation.
-
-**Assignment Requirement:**
-- This tool only works with **existing assignments** that already have submissions on Gradescope
-- It **cannot create new submissions** for assignments you haven't submitted to before
-- You must make at least one manual submission through the Gradescope web interface first
-- After the initial manual submission, this tool can handle all subsequent submissions automatically
-
-**Quick Setup for New Assignments:**
-1. Go to Gradescope website manually
-2. Submit your assignment once (any file is fine)
-3. Use this tool for all future submissions to that assignment
-
-> **💡 Why this limitation exists**: Gradescope's interface changes based on whether an assignment has previous submissions, and i just havent looked into automatting this initial step (working on it).
+**Assignment Support:**
+- **Automatic detection**: Works with any assignment without manual setup
+- **Universal compatibility**: Handles all submission interfaces seamlessly
 
 ## 🚀 Installation
 
@@ -64,7 +66,7 @@ playwright install chromium
 
 > **⚠️ Dependency Issue:** TestPyPI has limited package availability. If you get Playwright version errors, try installing dependencies separately first:
 > ```bash
-> pip install playwright pyyaml python-dotenv click
+> pip install playwright pyyaml python-dotenv click rich
 > pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
 > playwright install chromium
 > ```
@@ -77,66 +79,37 @@ playwright install chromium
 
 ## ⚡ Quick Start
 
-### 1. Initialize Configuration
+### 1. System Check & Setup
 
 ```bash
-# Create config file
+# Check system requirements and see the beautiful interface
+gradescope doctor
+
+# Create config file with guided setup
 gradescope init
 
-# Check system requirements
-gradescope doctor
+# Customize your UI interface colors (optional but fun!)
+gradescope ui
 ```
 
 ### 2. Set Credentials
 
-**🔐 Credentials Management**
+**🎨 Interactive Setup (Recommended)**
 ```bash
-gradescope credentials  # Guide for setting up credentials
+gradescope credentials
+# Navigate the beautiful menus:
+# 1. Manage .env credentials → Save/update credentials
+# 2. Environment variables → See copyable commands
+# 3. View current status → Check what's configured
 ```
 
-**Available Methods:**
+The credentials system offers multiple options:
+- **User-level .env file**: Works across all projects
+- **Project-level .env file**: Project-specific credentials  
+- **Environment variables**: Session-based or permanent
+- **Interactive prompts**: Enter credentials when needed
 
-**Option A: Session Environment Variables**
-
-**Linux/Mac (Bash/Zsh):**
-```bash
-export GRADESCOPE_USERNAME="n12345678"
-export GRADESCOPE_PASSWORD="your_password"
-# Lasts until terminal closes
-```
-
-**Windows PowerShell:**
-```powershell
-$env:GRADESCOPE_USERNAME = "n12345678"
-$env:GRADESCOPE_PASSWORD = "your_password"
-# Lasts until terminal closes
-```
-
-**Option B: .env File (Good for development)**
-```bash
-# Create .env file in project directory
-GRADESCOPE_USERNAME=n12345678
-GRADESCOPE_PASSWORD=your_password
-```
-
-> **💡 Pro tip:** The `.env` file is automatically loaded when you run any command, so you don't need to set environment variables every time you open a new terminal!
-
-**Option C: Permanent Environment Variables**
-
-**Windows PowerShell (Permanent):**
-```powershell
-[Environment]::SetEnvironmentVariable("GRADESCOPE_USERNAME", "n12345678", "User")
-[Environment]::SetEnvironmentVariable("GRADESCOPE_PASSWORD", "your_password", "User")
-# Restart terminal after this
-```
-
-**Linux/Mac (Permanent):**
-```bash
-# Add to ~/.bashrc, ~/.zshrc, or ~/.profile
-echo 'export GRADESCOPE_USERNAME="n12345678"' >> ~/.bashrc
-echo 'export GRADESCOPE_PASSWORD="your_password"' >> ~/.bashrc
-source ~/.bashrc
-```
+> **📖 Complete Guide:** See [CREDENTIALS.md](CREDENTIALS.md) for detailed setup, security notes, and troubleshooting.
 
 ### 3. Configure Assignment
 
@@ -156,24 +129,133 @@ manual_login: false
 no_session_save: false
 ```
 
-### 4. Submit
+### 4. Submit & Enjoy
 
 ```bash
 gradescope submit
 ```
 
+
+
+
+
+## ⚙️ How It Works
+
+This tool automates the manual Gradescope submission process using browser automation:
+
+**🔍 What the tool does:**
+1. **🔐 Logs into QUT SSO** - Handles university single sign-on automatically
+2. **🎯 Navigates Gradescope** - Finds your course and assignment using smart matching
+3. **📦 Bundles your files** - Creates a zip from your project files (respects .gitignore)
+4. **⚡ Submits automatically** - Handles both new submissions and resubmissions seamlessly
+5. **📊 Monitors grading** - Waits for and displays your grade when ready
+
+**🎭 What Playwright does:**
+- **Browser automation framework** - Controls a real Chromium browser programmatically
+- **Cross-platform** - Works identically on Windows, macOS, and Linux
+- **Reliable** - Handles dynamic web content, JavaScript, and complex interactions
+- **Headless capable** - Can run invisibly in the background or show the browser
+
+**🔒 Security approach:**
+- **No credential storage** in the tool itself - uses your system's environment variables or local .env files
+- **Session persistence** - Remembers your login between submissions (like staying logged in on a website)
+- **Local execution** - Everything runs on your machine, not on external servers
+
+This eliminates the repetitive clicking through Gradescope's interface while maintaining the same security as manual submission.
+
 ## 📋 CLI Commands
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `gradescope submit` | Submit to Gradescope | `gradescope submit --headless` |
-| `gradescope init` | Create config file | `gradescope init --path my-config.yml` |
-| `gradescope validate` | Check configuration | `gradescope validate` |
-| `gradescope credentials` | Manage credentials | `gradescope credentials` |
-| `gradescope doctor` | System diagnostics | `gradescope doctor` |
-| `gradescope cleanup` | Clear saved sessions | `gradescope cleanup` |
+The tool features a beautiful, consistent interface across all commands:
 
-### Submit Options
+| Command | Description | Features |
+|---------|-------------|----------|
+| `gradescope submit` | Submit to Gradescope | Rich progress, live grade monitoring |
+| `gradescope init` | Create config file | Interactive setup, validation |
+| `gradescope validate` | Check configuration | Detailed status tables |
+| `gradescope credentials` | Manage credentials | Multi-level menus, secure storage |
+| `gradescope doctor` | System diagnostics | Comprehensive health checks |
+| `gradescope ui` | Customize interface | Live color preview, settings |
+| `gradescope --help` | Show help | Beautiful panels and tables |
+| `gradescope --version` | Show version | Professional version display |
+
+> **📖 Complete Reference:** See [CLI_REFERENCE.md](CLI_REFERENCE.md) for all commands, options, and examples.  
+> **💡 Quick Help:** Use `gradescope --help` or `gradescope [command] --help` for command details.
+
+## 🔐 Credential Management
+
+### Easy Interactive Setup
+
+The credentials system provides a beautiful, guided experience:
+
+```bash
+gradescope credentials
+```
+
+**Main Menu Options:**
+1. **Manage .env credentials** - Save to user-level .env file (recommended)
+2. **Environment variables** - View copyable commands for your platform  
+3. **Exit** - Return to terminal
+
+**Environment Variables Submenu:**
+1. **How to set** - Platform-specific commands you can copy
+2. **How to delete** - Removal commands for cleanup
+3. **View current** - See what's currently configured
+
+### Supported Storage Methods
+
+**Option A: User-Level .env File (Recommended)**
+- Works across all your projects
+- Secure local storage
+- Easy to manage and delete
+
+**Option B: Environment Variables**
+
+*Session Variables (Temporary):*
+```bash
+# Windows PowerShell
+$env:GRADESCOPE_USERNAME='n12345678'
+$env:GRADESCOPE_PASSWORD='your_password'
+
+# Linux/Mac
+export GRADESCOPE_USERNAME='n12345678'
+export GRADESCOPE_PASSWORD='your_password'
+```
+
+*Permanent Variables:*
+```bash
+# Windows PowerShell (Permanent)
+[Environment]::SetEnvironmentVariable("GRADESCOPE_USERNAME", "n12345678", "User")
+[Environment]::SetEnvironmentVariable("GRADESCOPE_PASSWORD", "your_password", "User")
+
+# Linux/Mac (add to ~/.bashrc, ~/.zshrc, or ~/.profile)
+echo 'export GRADESCOPE_USERNAME="n12345678"' >> ~/.bashrc
+echo 'export GRADESCOPE_PASSWORD="your_password"' >> ~/.bashrc
+```
+
+**Option C: Project-Level .env File**
+```bash
+# Create .env file in project directory
+GRADESCOPE_USERNAME=n12345678
+GRADESCOPE_PASSWORD=your_password
+```
+
+### Storage Locations
+
+**User-Level .env Files:**
+- **Windows:** `%LOCALAPPDATA%\qut_gradescope_autosubmitter\.env`
+- **macOS/Linux:** `~/.qut-gradescope-autosubmitter/.env`
+
+**Priority Order:**
+1. Project-level .env file (if present)
+2. User-level .env file
+3. Environment variables
+4. Interactive prompt
+
+> **📖 Complete Guide:** See [CREDENTIALS.md](CREDENTIALS.md) for security best practices, troubleshooting, and advanced configuration.
+
+## 📊 Submit Options & Progress
+
+### Command Options
 
 ```bash
 gradescope submit [OPTIONS]
@@ -193,188 +275,78 @@ Options:
   --no-session-save      Don't save credentials to session env vars
 ```
 
-## 🔧 Configuration
+### Beautiful Progress Display
 
-### YAML Configuration File
+The tool shows detailed progress with timestamps and colors:
 
-```yaml
-# gradescope.yml
-course: cab201
-assignment: t6q1
-file: submission.zip
-bundle:
-  - "*.py"
-  - "*.cpp" 
-  - "src/**/*"
-notify_when_graded: true
-headless: false
+```
+[15:42:31.45] ✓ Created: submission.zip (25 files, 0.1 MB)
+[15:42:31.89] ✓ Persistent context created with user data directory
+> [1/5] Checking login status...
+[15:42:33.12] ✓ Using existing session
+    → Completed in 1.8s
+> [2/5] Finding course 'cab201'...
+[15:42:33.35] ✓ Found course: CAB201_24se2
+    → Completed in 0.2s
+> [3/5] Finding assignment 't6q1'...
+[15:42:33.78] ✓ Found assignment: T6Q1: Linked List (Formative)
+    → Completed in 0.4s
+> [4/5] Submitting file...
+[15:42:34.12] INFO Resubmission detected - clicking resubmit button...
+[15:42:34.45] INFO Uploading: submission.zip
+[15:42:35.23] INFO Clicking Upload...
+    → Completed in 1.8s
+> [5/5] Waiting for grade...
+Grade returned after 0:42: 15.0 / 15.0 (100%)
+[15:42:38.67] ✓ Submission completed! (Total: 7.2s)
 ```
 
-### Environment Variables
+## 🔒 Security & Session Management
 
-All config options can be overridden with environment variables:
+**Default Mode (Recommended):**
+- Saves login session for efficiency
+- Subsequent submissions are faster  
+- Session expires automatically when needed
+- Beautiful progress indicators show session status
 
-**Linux/Mac:**
+**Advanced Security Options:**
 ```bash
-export GRADESCOPE_USERNAME="n12345678"
-export GRADESCOPE_PASSWORD="your_password"
-export GRADESCOPE_COURSE="cab201"
-export GRADESCOPE_ASSIGNMENT="t6q1"
-export GRADESCOPE_FILE="submission.zip"
-export GRADESCOPE_BUNDLE="*.py,*.cpp,*.h"
-export GRADESCOPE_NOTIFY_WHEN_GRADED="true"
-export GRADESCOPE_HEADLESS="false"
+gradescope submit --manual-login    # Maximum security - browser login
+gradescope submit --fresh-login     # Force new login (troubleshooting)
+gradescope cleanup                  # Clear saved sessions
 ```
 
-**Windows PowerShell:**
-```powershell
-$env:GRADESCOPE_USERNAME = "n12345678"
-$env:GRADESCOPE_PASSWORD = "your_password"
-$env:GRADESCOPE_COURSE = "cab201"
-$env:GRADESCOPE_ASSIGNMENT = "t6q1"
-$env:GRADESCOPE_FILE = "submission.zip"
-$env:GRADESCOPE_BUNDLE = "*.py,*.cpp,*.h"
-$env:GRADESCOPE_NOTIFY_WHEN_GRADED = "true"
-$env:GRADESCOPE_HEADLESS = "false"
-```
+## 🎨 Customization
 
-## 🔒 Security Options
+### Color Themes
 
-### Session Management
+Personalize your experience with custom colors:
 
-By default, the tool uses **session persistence** for efficiency:
-- **First submission**: Login once (3-5 seconds)
-- **Subsequent submissions**: Reuse session (1 second)
-- **Session expires**: Auto re-login when needed
-
-### Enhanced Security Options
-
-For enhanced security, you have several options:
-
-**Option 1: Manual Login (Highest Security)**
 ```bash
-gradescope submit --manual-login
-# Opens browser, you type credentials directly
-# Tool never touches your passwords
+gradescope ui
 ```
 
-**Option 2: Fresh Login (High Security)**
-```yaml
-# Config file
-always_fresh_login: true  # Always login fresh
-```
-```bash
-# Command line
-gradescope submit --fresh-login  # One-time fresh login
-```
+Choose from:
+- **Primary Color**: Main interface elements and highlights
+- **Success Color**: Completion indicators and positive messages  
+- **Warning Color**: Alerts and important notices
+- **Error Color**: Error messages and critical alerts
 
-**What "fresh login" means:**
-- Ignores any saved session data
-- Forces a complete new login process
-- Useful for troubleshooting or when session data is corrupted
+Pick from 17+ colors including cyan, orange, purple, bright variants, and more!
 
-### 🎛️ YAML Configuration
+### UI Settings
 
-All security flags can be set in your `gradescope.yml`:
+Fine-tune your experience:
+- **Timestamps**: Show/hide detailed timing information
+- **Animations**: Enable/disable progress animations
+- **Compact Mode**: Reduce visual clutter
+- **Step Timings**: Display individual step completion times
 
-```yaml
-# Course Details (edit these!)
-course: cab201
-assignment: t6q1
-zip_name: submission.zip
-bundle: ['*']
+## 🤖 CI/CD Automation
 
-# Behavior Settings (can be overridden by CLI flags)
-always_fresh_login: false    # Force fresh login every time
-headless: false
-notify_when_graded: true
-manual_login: false          # Open browser for manual login
-no_session_save: false       # Don't save credentials to session vars
-```
+Automate submissions with GitHub Actions, Git hooks, or other CI/CD systems.
 
-### 🎯 Flag Purpose Guide
-
-**When to use each security flag:**
-
-| Flag | Purpose | Use Case |
-|------|---------|----------|
-| **`--manual-login`** | You type credentials directly in browser | **Maximum security** - tool never sees passwords |
-| **`--fresh-login`** | Always login fresh, ignore session | **Troubleshooting** - force clean login |
-
-> ⚠️ **Rate Limiting Note**: Both `--manual-login` and `--fresh-login` trigger new SSO requests and may cause rate limiting with frequent use.
-
-**Typical workflows:**
-- **Most users**: Set environment variables or .env file, then run `gradescope submit`
-- **Maximum security**: `gradescope submit --manual-login`
-- **Development**: Set permanent env vars or .env file
-- **Troubleshooting**: `gradescope submit --fresh-login`
-
-### Manual Session Management
-```bash
-gradescope cleanup  # Clear saved session data
-```
-
-**What `gradescope cleanup` does:**
-- Removes all saved browser session data
-- Clears cookies and local storage
-- Forces fresh login on next submission
-- Useful when switching between different QUT accounts
-
-## 🤖 GitHub Actions
-
-> ⚠️ **Status**: GitHub Actions integration is **not yet fully tested** and may require additional configuration. Use with caution. doesnt work currently
-
-Automate submissions on every commit!
-
-> 📖 **Detailed Setup Guide**: See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for comprehensive setup instructions, troubleshooting, and advanced configurations.
-
-> ⚠️ **Rate Limiting Warning**: GitHub Actions will trigger new login requests for each run, which may trigger QUT SSO rate limiting if you have frequent commits. Consider using scheduled submissions instead of commit-based submissions for high-frequency repositories.
-
-> ⚠️ **Previous Submission Required**: GitHub Actions workflows require assignments to have at least one prior manual submission before automation can work.
-
-### Setup
-
-1. **Add Repository Secrets** (`Settings > Secrets and Variables > Actions`):
-   - `GRADESCOPE_USERNAME`: Your QUT student number
-   - `GRADESCOPE_PASSWORD`: Your QUT password
-
-2. **Add Repository Variables**:
-   - `GRADESCOPE_COURSE`: Course code (e.g., `cab201`)
-   - `GRADESCOPE_ASSIGNMENT`: Assignment name (e.g., `t6q1`)
-
-3. **Add Workflow** (`.github/workflows/auto-submit.yml`):
-
-```yaml
-name: Auto Submit to Gradescope
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  submit:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        
-    - name: Install and submit
-      env:
-        GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
-        GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
-        GRADESCOPE_COURSE: ${{ vars.GRADESCOPE_COURSE }}
-        GRADESCOPE_ASSIGNMENT: ${{ vars.GRADESCOPE_ASSIGNMENT }}
-      run: |
-        pip install -i https://test.pypi.org/simple/ qut-gradescope-autosubmitter
-        playwright install chromium
-        gradescope submit --headless --no-grade-wait
-```
-
-See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for advanced configurations.
+> **📖 Setup Guide:** See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for complete automation setup instructions.
 
 ## 📖 Examples
 
@@ -416,28 +388,33 @@ bundle:
 # Override config file settings
 gradescope submit --course cab202 --assignment "Lab 5" --headless
 
-# Submit specific files
+# Submit specific files with custom colors
 gradescope submit -b "*.java" -b "*.xml" --file java-submission.zip
 
 # Quick submission with credentials
 gradescope submit -u n12345678 -p password --headless
 ```
 
-## 🔒 Security Features
-
-- **Environment Variable Support**: No hardcoded credentials
-- **Secure Input Prompts**: Hidden password input
-- **Input Validation**: Username format validation
-- **Git-Safe Defaults**: Sensitive files auto-excluded
-- **CI/CD Ready**: Headless mode for automated environments
-
 ## 🚨 Troubleshooting
+
+### Interactive Diagnostics
+
+```bash
+# Beautiful system health check
+gradescope doctor
+
+# Validate configuration with detailed feedback
+gradescope validate
+
+# Check credentials status
+gradescope credentials
+```
 
 ### Common Issues
 
 **"Config file not found"**
 ```bash
-gradescope init  # Create default config
+gradescope init  # Interactive setup with validation
 ```
 
 **"Course/Assignment not found"**
@@ -445,46 +422,31 @@ gradescope init  # Create default config
 - Check exact names on Gradescope website
 - Try shorter search terms
 
-**"Assignment submission failed" or "Assignment not available"**
-- **This tool requires at least one prior submission** to the assignment
-- Go to Gradescope manually and submit once (any file works)
-- Then use this tool for all future submissions
-- The tool cannot create new assignment submissions
-
-**"strict mode violation: locator resolved to 3 elements"**
-- This error means the assignment has no previous submissions
-- Make one manual submission through Gradescope web interface first
-- Then the CLI tool will work for all subsequent submissions
+**"Credentials not found"**
+```bash
+gradescope credentials  # Interactive credential setup
+```
 
 **"Browser timeout"**
 ```bash
 gradescope submit --headless  # Try headless mode
 ```
 
-**"Credentials not found"**
-
-**Linux/Mac:**
+**Visual Issues or Color Problems**
 ```bash
-export GRADESCOPE_USERNAME="n12345678"
-export GRADESCOPE_PASSWORD="your_password"
-```
-
-**Windows PowerShell:**
-```powershell
-$env:GRADESCOPE_USERNAME = "n12345678"
-$env:GRADESCOPE_PASSWORD = "your_password"
+gradescope ui  # Reset colors to defaults or customize
 ```
 
 ### Debug Mode
 
 ```bash
-# Check system status
+# Check system status with beautiful output
 gradescope doctor
 
-# Validate configuration  
+# Validate configuration with detailed tables
 gradescope validate
 
-# Test with verbose output
+# Test with minimal output
 gradescope submit --headless --no-grade-wait
 ```
 
@@ -526,6 +488,7 @@ python -m twine upload dist/*
 - Playwright (automatically installed)
 - PyYAML (automatically installed)
 - Click (automatically installed)
+- Rich (automatically installed)
 
 ## ⚠️ Important Disclaimers
 
@@ -549,5 +512,19 @@ python -m twine upload dist/*
 - Ensure your use complies with QUT's academic integrity policies
 - This tool is intended for legitimate assignment submission automation only
 - Users are responsible for understanding and following their institution's rules
+
 ---
 
+## 🎨 What's New
+
+This version features a complete UI overhaul with:
+
+- **🎨 Rich Terminal Interface**: Beautiful panels, tables, and progress bars
+- **🌈 Custom Colors**: 17+ color options for personalizing your experience
+- **📊 Smart Progress Tracking**: Real-time step indicators with timestamps
+- **🔧 Interactive Menus**: Guided setup and configuration
+- **⚡ Enhanced Performance**: Optimized step tracking and reduced duplication
+- **🔐 Improved Security**: Multiple credential storage options with guided setup
+- **📋 Better Help System**: Professional help pages and command documentation
+
+Transform your Gradescope submission experience from mundane to beautiful! 🚀
