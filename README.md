@@ -139,9 +139,8 @@ gradescope hooks  # Interactive setup
 ## 🔧 Troubleshooting
 
 **Common issues:**
-- **Installation errors:** Try the separate dependency installation method above
 - **Login failures:** Use `gradescope credentials` to reconfigure
-- **Assignment not found:** Check course code and assignment name in config
+- **Assignment not found:** Check course code and assignment name in config matches Gradescope
 - **Browser issues:** Run `gradescope doctor` for system diagnostics
 
 For detailed troubleshooting, see the [Command Reference](CLI_REFERENCE.md) or run `gradescope --help`.
