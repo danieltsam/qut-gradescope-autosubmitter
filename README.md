@@ -77,9 +77,9 @@ Modern CLI built with Rich - panels, progress bars, and custom themes that make 
 
 Create `gradescope.yml` in your project:
 ```yaml
-# Required: Course and assignment details (replace example comment values)
-course: #cab201              # Course code (must partially match Gradescope course name)
-assignment: #t6q1            # Assignment name (must partially match Gradescope assignment name)
+# Required: Course and assignment details 
+course: cab201              # Course code (must partially match Gradescope course name)
+assignment: t6q1            # Assignment name (must partially match Gradescope assignment name)
 
 # Optional: Submission settings
 zip_name: submission.zip    # Name of the zip file to create and submit
