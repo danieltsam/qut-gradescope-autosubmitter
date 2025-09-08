@@ -3,8 +3,9 @@
 **One command to submit assignments to Gradescope. No more repetitive clicking.**
 
 ```bash
-gradescope submit  # That's it.
+gradescope submit  
 ```
+*** That's it.
 ---
 
 ## Why This Exists
