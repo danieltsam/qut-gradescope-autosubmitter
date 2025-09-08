@@ -2,13 +2,13 @@
 
 # QUT Gradescope Auto Submitter
 
+![PyPI - Version](https://img.shields.io/pypi/v/qut-gradescope-autosubmitter)
 **One command to submit assignments to Gradescope. No more repetitive clicking.**
 
 ```bash
 gradescope submit  
 ```
 
-![PyPI - Version](https://img.shields.io/pypi/v/qut-gradescope-autosubmitter)
 
 </div>
 
