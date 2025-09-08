@@ -21,7 +21,7 @@ As a QUT student, I was tired of:
 - Clicking through Gradescope 50+ times per assignment during rapid iteration
 - Waiting for pages to load when testing different approaches
 - Losing focus switching between code editor and browser
-- Manual file uploads and form submissions
+- Manual file compression, uploads and form submissions
 
 This tool automates the entire submission process so you can focus on coding, not clicking.
 
