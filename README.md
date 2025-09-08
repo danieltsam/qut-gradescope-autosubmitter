@@ -42,7 +42,7 @@ gradescope submit      # Submit current assignment
 That's it. No more manual submissions.
 
 
-*Or use it with your existing repository as a [Github Action](https://github.com/marketplace/actions/qut-gradescope-autosubmission)*
+*Or use it with your existing repository as a [Github Action](https://github.com/marketplace/actions/qut-gradescope-autosubmission)* 😊
 
 ## 🔄 How It Works
 
