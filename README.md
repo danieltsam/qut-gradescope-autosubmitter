@@ -13,6 +13,11 @@ gradescope submit
 
 </div>
 
+
+---
+
+https://github.com/user-attachments/assets/f006889f-b09a-41ec-9c61-b84f6af17eaa
+
 ---
 
 ## Why This Exists
@@ -109,13 +114,12 @@ gradescope hooks  # Interactive setup
 ```
 
 **🤖 GitHub Actions** (cloud automation):
-See [GitHub Actions Setup Guide](GITHUB_ACTIONS_SETUP.md) for complete configuration.
+[View on Github Marketplace](https://github.com/marketplace/actions/qut-gradescope-autosubmission)
 
 ## 📚 Documentation
 
 - **[Command Reference](CLI_REFERENCE.md)** - Complete command guide with examples
 - **[Credential Management](CREDENTIALS.md)** - Security options and setup
-- **[Automation Setup](GITHUB_ACTIONS_SETUP.md)** - Git hooks and CI/CD integration
 
 ## ⚠️ Important Notes
 
