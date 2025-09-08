@@ -1,6 +1,6 @@
-<div align="center"> 
+
 # QUT Gradescope Auto Submitter 
-</div>
+
 
 **One command to submit assignments to Gradescope. No more repetitive clicking.**
 
