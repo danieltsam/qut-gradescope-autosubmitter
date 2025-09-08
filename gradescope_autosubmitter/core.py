@@ -177,11 +177,16 @@ class GradescopeSubmitter:
                     console.print(f"[dim]Added:[/dim] [{colors['primary']}]{arcname}[/{colors['primary']}]")
                     progress.advance(task)
         
-        # Get file size
+        # Get file size and display in KB if < 1 MB
         file_size = os.path.getsize(output_filename)
         size_mb = file_size / (1024 * 1024)
+        if size_mb < 1:
+            size_kb = file_size / 1024
+            size_str = f"{size_kb:.0f} KB"
+        else:
+            size_str = f"{size_mb:.1f} MB"
         
-        log_success(f"Created: {output_filename} ({len(matched_files)} files, {size_mb:.1f} MB)")
+        log_success(f"Created: {output_filename} ({len(matched_files)} files, {size_str})")
     
     def print_submission_summary(self, course_label: str, assignment_label: str, file: str, grade: str = None) -> None:
         """Print a formatted submission summary."""

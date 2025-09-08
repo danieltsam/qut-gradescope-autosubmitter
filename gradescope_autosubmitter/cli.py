@@ -71,7 +71,7 @@ Version: [{colors['success']}]{__version__}[/{colors['success']}]
         content,
         title="Version Information",
         border_style=colors['primary'],
-        box=box.ROUNDED
+        box=box.DOUBLE
     )
     
     console.print(panel)
