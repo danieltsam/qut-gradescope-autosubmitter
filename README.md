@@ -23,8 +23,8 @@ https://github.com/user-attachments/assets/f006889f-b09a-41ec-9c61-b84f6af17eaa
 ## Why This Exists
 
 As a QUT student, I was tired of:
-- Clicking through Gradescope 50+ times per assignment during rapid iteration
-- Waiting for pages to load when testing different approaches
+- Clicking through Gradescope 50+ times per assignment when trying to see if I met test cases
+- Being forced to wait when I'm trying to get quick feedback on my work
 - Losing focus switching between code editor and browser
 - Manual file compression, uploads and form submissions
 
