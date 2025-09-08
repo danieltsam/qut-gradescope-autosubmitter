@@ -37,7 +37,7 @@ That's it. No more manual submissions.
 
 ## How It Works
 
-1. **Authenticates with QUT SSO** - Handles university login automatically
+1. **Authenticates with QUT SSO** - Handles university login automatically (using Playwright)
 2. **Navigates to Gradescope** - Finds your course and assignment using smart matching
 3. **Bundles your files** - Creates submission zip (respects .gitignore)
 4. **Submits automatically** - Handles uploads and form submission
@@ -67,12 +67,6 @@ Modern CLI built with Rich - panels, progress bars, and custom themes that make 
 - **System diagnostics** - Built-in troubleshooting tools
 - **Customizable UI** - Adjust colors and behavior to your preference
 
-## Installation
-
-```bash
-# Standard installation (PyPI)
-pip install qut-gradescope-autosubmitter && playwright install chromium
-```
 
 ## Basic Configuration
 
@@ -88,19 +82,9 @@ headless: true          # Run browser in background
 notify_when_graded: true
 ```
 
-## Commands
-
-| Command | Purpose |
-|---------|---------|
-| `gradescope submit` | Submit current assignment |
-| `gradescope init` | Create config file with guided setup |
-| `gradescope credentials` | Manage QUT login credentials |
-| `gradescope doctor` | Check system requirements and troubleshoot |
-| `gradescope --help` | Show all available commands |
-
 ## Automation Options
 
-**Git Hooks** (submit on every commit):
+**Git Hooks** (submit to Gradescope before/after every commit):
 ```bash
 gradescope hooks  # Interactive setup
 ```
@@ -147,8 +131,3 @@ See [GitHub Actions Setup Guide](GITHUB_ACTIONS_SETUP.md) for complete configura
 
 For detailed troubleshooting, see the [Command Reference](docs/CLI_REFERENCE.md) or run `gradescope --help`.
 
----
-
-**Made for QUT students who prefer automation over repetition.**
-
-*This tool was built using modern development practices to solve a real student workflow problem.*
