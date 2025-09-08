@@ -8,7 +8,7 @@
 gradescope submit  
 ```
 
-[![PyPI](https://badge.fury.io/py/qut-gradescope-autosubmitter.svg)](https://pypi.org/project/qut-gradescope-autosubmitter/)
+![PyPI - Version](https://img.shields.io/pypi/v/qut-gradescope-autosubmitter)
 
 </div>
 
