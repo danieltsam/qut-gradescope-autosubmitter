@@ -5,7 +5,7 @@
 ```bash
 gradescope submit  
 ```
-*** That's it.
+That's it.
 ---
 
 ## Why This Exists
