@@ -77,14 +77,25 @@ Modern CLI built with Rich - panels, progress bars, and custom themes that make 
 
 Create `gradescope.yml` in your project:
 ```yaml
-course: cab201          # Your course code
-assignment: assignment1 # Assignment name (fuzzy matched)
-zip_name: submission.zip
-bundle: ['*']           # Files to include (* = all, respects .gitignore)
+# Required: Course and assignment details (replace example comment values)
+course: #cab201              # Course code (must partially match Gradescope course name)
+assignment: #t6q1            # Assignment name (must partially match Gradescope assignment name)
 
-# Optional settings
-headless: true          # Run browser in background
-notify_when_graded: true
+# Optional: Submission settings
+zip_name: submission.zip    # Name of the zip file to create and submit
+bundle:                     # File patterns to include in submission
+  - "*"                    # Everything (respects .gitignore)
+  # - "*.py"               # All Python files
+  # - "*.cpp"              # All C++ files
+  # - "*.h"                # All header files
+  # - "src/**/*"           # Everything in src directory
+
+# Optional: Behaviour settings
+notify_when_graded: true    # Wait for and display grade (default: true)
+headless: false             # Run browser in background (default: false)
+always_fresh_login: false   # Always login fresh
+manual_login: false         # Open browser for manual login 
+no_session_save: false      # Don't save credentials to session env vars
 ```
 
 ## 🔗 Automation Options
