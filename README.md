@@ -1,11 +1,11 @@
-# QUT Gradescope Auto Submitter
+<div align="center"># QUT Gradescope Auto Submitter</div>
 
 **One command to submit assignments to Gradescope. No more repetitive clicking.**
 
 ```bash
 gradescope submit  
 ```
-#### That's it.
+##### That's it.
 ---
 
 ## Why This Exists
