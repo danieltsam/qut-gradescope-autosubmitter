@@ -1,12 +1,17 @@
+<div align="center">
 
-# QUT Gradescope Auto Submitter 
-
+# QUT Gradescope Auto Submitter
 
 **One command to submit assignments to Gradescope. No more repetitive clicking.**
 
 ```bash
 gradescope submit  
 ```
+
+[![PyPI](https://badge.fury.io/py/qut-gradescope-autosubmitter.svg)](https://pypi.org/project/qut-gradescope-autosubmitter/)
+
+</div>
+
 ---
 
 ## Why This Exists
@@ -19,7 +24,7 @@ As a QUT student, I was tired of:
 
 This tool automates the entire submission process so you can focus on coding, not clicking.
 
-## Quick Start
+## ⚡ Quick Start
 
 ```bash
 # Install
@@ -35,17 +40,17 @@ gradescope submit      # Submit current assignment
 
 That's it. No more manual submissions.
 
-## How It Works
+## 🔄 How It Works
 
-1. **Authenticates with QUT SSO** - Handles university login automatically (using Playwright)
-2. **Navigates to Gradescope** - Finds your course and assignment using smart matching
-3. **Bundles your files** - Creates submission zip (respects .gitignore)
-4. **Submits automatically** - Handles uploads and form submission
-5. **Shows your grade** - Displays results when available
+1. **🔐 Authenticates with QUT SSO** - Handles university login automatically (using Playwright)
+2. **🎯 Navigates to Gradescope** - Finds your course and assignment using smart matching
+3. **📦 Bundles your files** - Creates submission zip (respects .gitignore)
+4. **⬆️ Submits automatically** - Handles uploads and form submission
+5. **📊 Shows your grade** - Displays results when available
 
 Everything runs locally using browser automation. No data leaves your machine except for the normal submission to Gradescope.
 
-## Key Features
+## ✨ Key Features
 
 ### Beautiful Terminal Interface
 Modern CLI built with Rich - panels, progress bars, and custom themes that make terminal work enjoyable.
@@ -67,8 +72,7 @@ Modern CLI built with Rich - panels, progress bars, and custom themes that make 
 - **System diagnostics** - Built-in troubleshooting tools
 - **Customizable UI** - Adjust colors and behavior to your preference
 
-
-## Basic Configuration
+## ⚙️ Basic Configuration
 
 Create `gradescope.yml` in your project:
 ```yaml
@@ -82,27 +86,27 @@ headless: true          # Run browser in background
 notify_when_graded: true
 ```
 
-## Automation Options
+## 🔗 Automation Options
 
-**Git Hooks** (submit to Gradescope before/after every commit):
+**🪝 Git Hooks** (submit to Gradescope before/after every commit):
 ```bash
 gradescope hooks  # Interactive setup
 ```
 
-**GitHub Actions** (cloud automation):
+**🤖 GitHub Actions** (cloud automation):
 See [GitHub Actions Setup Guide](GITHUB_ACTIONS_SETUP.md) for complete configuration.
 
-## Documentation
+## 📚 Documentation
 
 - **[Command Reference](CLI_REFERENCE.md)** - Complete command guide with examples
 - **[Credential Management](CREDENTIALS.md)** - Security options and setup
 - **[Automation Setup](GITHUB_ACTIONS_SETUP.md)** - Git hooks and CI/CD integration
 
-## Important Notes
+## ⚠️ Important Notes
 
 **Current Status:**
-- **PyPI Release** - Available on PyPI
-- **Stable Features** - Core submission functionality is reliable and tested
+- ✅ **PyPI Release** - Available on PyPI
+- ✅ **Stable Features** - Core submission functionality is reliable and tested
 
 **Usage Responsibility:**
 - This tool is provided "as-is" for legitimate academic use
@@ -115,13 +119,13 @@ See [GitHub Actions Setup Guide](GITHUB_ACTIONS_SETUP.md) for complete configura
 - May break if QUT or Gradescope significantly change their interfaces
 - Some specialized assignment types may not be supported
 
-## Requirements
+## 📋 Requirements
 
 - Python 3.8+
 - QUT student account with Gradescope access
 - Internet connection for initial setup and submissions
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 **Common issues:**
 - **Installation errors:** Try the separate dependency installation method above
@@ -129,5 +133,4 @@ See [GitHub Actions Setup Guide](GITHUB_ACTIONS_SETUP.md) for complete configura
 - **Assignment not found:** Check course code and assignment name in config
 - **Browser issues:** Run `gradescope doctor` for system diagnostics
 
-For detailed troubleshooting, see the [Command Reference](docs/CLI_REFERENCE.md) or run `gradescope --help`.
-
+For detailed troubleshooting, see the [Command Reference](CLI_REFERENCE.md) or run `gradescope --help`.
