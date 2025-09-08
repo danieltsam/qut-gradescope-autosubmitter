@@ -1,8 +1,8 @@
-# CLI Reference - QUT Gradescope Auto Submitter
+# CLI Reference Guide
 
 Complete reference for all CLI commands, options, and advanced configuration.
 
-## 📋 All Commands
+## All Commands
 
 | Command | Description | Example |
 |---------|-------------|---------|
@@ -13,9 +13,9 @@ Complete reference for all CLI commands, options, and advanced configuration.
 | `gradescope doctor` | System diagnostics | `gradescope doctor` |
 | `gradescope cleanup` | Clear saved sessions | `gradescope cleanup` |
 
-> **💡 Tip:** Use `gradescope --help` or `gradescope [command] --help` for detailed information about any command and its options.
+Use `gradescope --help` or `gradescope [command] --help` for detailed information about any command and its options.
 
-## 🚀 Submit Command Options
+## Submit Command
 
 ```bash
 gradescope submit [OPTIONS]
@@ -35,9 +35,9 @@ Options:
   --no-session-save      Don't save credentials to session env vars
 ```
 
-### Submit Options & Progress Display
+### Progress Display
 
-The tool shows detailed progress with beautiful timestamps and colors:
+The tool shows detailed progress with timestamps and colors:
 
 ```
 [15:42:31.45] ✓ Created: submission.zip (25 files, 0.1 MB)
@@ -77,7 +77,7 @@ gradescope submit -b "*.java" -b "*.xml" --file java-submission.zip
 gradescope submit -u n12345678 -p password --headless
 ```
 
-## 📖 Project Examples
+## Project Examples
 
 ### Basic Python Project
 
@@ -111,20 +111,7 @@ bundle:
   - 'README.md'
 ```
 
-### Command Line Overrides
-
-```bash
-# Override config file settings
-gradescope submit --course cab202 --assignment "Lab 5" --headless
-
-# Submit specific files with custom colors
-gradescope submit -b "*.java" -b "*.xml" --file java-submission.zip
-
-# Quick submission with credentials
-gradescope submit -u n12345678 -p password --headless
-```
-
-## 🔧 Configuration Commands
+## Configuration Commands
 
 ### gradescope init
 
@@ -161,7 +148,7 @@ Checks system requirements:
 - Config file status
 - Credential status
 
-## 🔐 Credential Management
+## Credential Management
 
 ### gradescope credentials
 
@@ -182,7 +169,7 @@ Interactive credential management with submenus:
 2. Show clear commands
 3. Back
 
-## 🧹 Maintenance Commands
+## Maintenance Commands
 
 ### gradescope cleanup
 
@@ -195,7 +182,7 @@ Clears saved browser session data. Use when:
 - Session corruption issues
 - Login problems
 
-## 🔒 Security Options
+## Security Options
 
 ### Session Management Modes
 
@@ -230,7 +217,7 @@ manual_login: true
 - Frequent use may trigger QUT SSO rate limiting
 - **Recommended:** Use default session persistence for regular use
 
-## 📁 File Bundling
+## File Bundling
 
 ### Bundle Patterns
 
@@ -262,7 +249,7 @@ gradescope submit -b "src/**/*.java" -b "*.xml" -b "README.md"
 - `__pycache__`, `node_modules`
 - The output zip file itself
 
-## 🌍 Environment Variables
+## Environment Variables
 
 All config options can be overridden with environment variables using `GRADESCOPE_` prefix:
 
@@ -286,7 +273,7 @@ $env:GRADESCOPE_HEADLESS = "true"
 $env:GRADESCOPE_NOTIFY_WHEN_GRADED = "false"
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -343,8 +330,8 @@ gradescope submit --headless --no-grade-wait
 - May need `python3` and `pip3` instead of `python` and `pip`
 - Check file permissions for config files
 
-## 📖 More Information
+## Related Documentation
 
-- [README.md](README.md) - Quick start and installation
-- [TESTING_GUIDE.md](TESTING_GUIDE.md) - Comprehensive testing procedures
-- [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) - CI/CD automation setup
+- **[Main README](../README.md)** - Quick start guide and overview
+- **[Credential Management](CREDENTIALS.md)** - Security options and setup
+- **[Automation Setup](GITHUB_ACTIONS_SETUP.md)** - Git hooks and CI/CD integration

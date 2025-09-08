@@ -320,10 +320,10 @@ def create_submenu_panel(title: str, options: list, back_option: str = "Back") -
     content = f"[bold]{title}[/bold]\n\n"
     
     for i, option in enumerate(options, 1):
-        content += f"[{primary_color}]{i}[/{primary_color}] {option}\n"
+        content += f"[{primary_color}][{i}][/{primary_color}] {option}\n"
     
     if back_option:
-        content += f"[{primary_color}]{len(options) + 1}[/{primary_color}] {back_option}"
+        content += f"[{primary_color}][{len(options) + 1}][/{primary_color}] {back_option}"
     
     return Panel(
         content,
@@ -339,6 +339,23 @@ def create_ui_config_panel(config: dict) -> Panel:
     success_color = config['colors']['success']
     warning_color = config['colors']['warning']
     error_color = config['colors']['error']
+
+    # Map rich color codes back to friendly names when possible
+    def _friendly_color_name(code: str) -> str:
+        try:
+            from .ui_config import get_available_colors
+            mapping = get_available_colors()
+            for friendly, rich_code in mapping.items():
+                if rich_code == code:
+                    return friendly
+        except Exception:
+            pass
+        return code
+
+    primary_name = _friendly_color_name(primary_color)
+    success_name = _friendly_color_name(success_color)
+    warning_name = _friendly_color_name(warning_color)
+    error_name = _friendly_color_name(error_color)
     
     content = f"""[bold]Settings:[/bold]
 [{primary_color}]•[/{primary_color}] Timestamps: {'[' + success_color + ']On[/' + success_color + ']' if config['log_timestamps'] else '[' + error_color + ']Off[/' + error_color + ']'}
@@ -348,14 +365,53 @@ def create_ui_config_panel(config: dict) -> Panel:
 [{primary_color}]•[/{primary_color}] Grade Display: [{warning_color}]{config['grade_wait_display']}[/{warning_color}]
 
 [bold]Current Colors:[/bold]
-[{primary_color}]•[/{primary_color}] Primary: [{primary_color}]■[/{primary_color}] {config['colors']['primary']}
-[{primary_color}]•[/{primary_color}] Success: [{success_color}]■[/{success_color}] {config['colors']['success']}  
-[{primary_color}]•[/{primary_color}] Warning: [{warning_color}]■[/{warning_color}] {config['colors']['warning']}
-[{primary_color}]•[/{primary_color}] Error: [{error_color}]■[/{error_color}] {config['colors']['error']}"""
+[{primary_color}]•[/{primary_color}] Primary: [{primary_color}]■[/{primary_color}] {primary_name}
+[{primary_color}]•[/{primary_color}] Success: [{success_color}]■[/{success_color}] {success_name}  
+[{primary_color}]•[/{primary_color}] Warning: [{warning_color}]■[/{warning_color}] {warning_name}
+[{primary_color}]•[/{primary_color}] Error: [{error_color}]■[/{error_color}] {error_name}"""
     
     return Panel(
         content,
         title="UI Configuration",
         border_style=primary_color,
         box=box.ROUNDED
+    )
+
+def create_spinner_progress(description: str = "Working..."):
+    """Create a spinner progress with blinking text for grade monitoring."""
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.text import Text
+    
+    config = get_ui_config()
+    primary_color = config['colors']['primary']
+    
+    # Custom text column that supports blinking
+    class BlinkingTextColumn(TextColumn):
+        def __init__(self, text_format: str = "[progress.description]{task.description}"):
+            super().__init__(text_format)
+            self.blink_state = False
+            self.last_blink = time.time()
+        
+        def render(self, task):
+            # Blink every 0.8 seconds
+            current_time = time.time()
+            blink_interval = get_ui_config().get("grade_blink_interval", 1.2)
+            if current_time - self.last_blink > blink_interval:
+                self.blink_state = not self.blink_state
+                self.last_blink = current_time
+            
+            # Apply blinking by switching between normal and dim
+            if self.blink_state:
+                text_style = f"bold {primary_color}"
+            else:
+                text_style = f"dim {primary_color}"
+            
+            text = Text(task.description, style=text_style)
+            return text
+    
+    return Progress(
+        SpinnerColumn(style=primary_color),
+        BlinkingTextColumn(),
+        console=console,
+        transient=False
     )

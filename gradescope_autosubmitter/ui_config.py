@@ -14,36 +14,34 @@ DEFAULT_UI_CONFIG = {
     "log_timestamps": True,
     "log_level": "info",  # debug, info, warning, error
     "colors": {
-        "primary": "cyan",
-        "success": "green", 
-        "warning": "yellow",
-        "error": "red"
+        "primary": "salmon1",
+        "success": "medium_spring_green", 
+        "warning": "khaki1",
+        "error": "light_coral"
     },
     "animations": True,  # Enable/disable progress animations
     "compact_mode": False,  # Reduced spacing and output
     "show_step_timings": True,  # Show completion times for steps
     "grade_wait_display": "timer",  # timer, spinner, minimal, none
+    "grade_blink_interval": 1.2,  # seconds between blink toggles during grade wait
 }
 
-# Available color options for UI customization
+# Available color options for UI customization - Top 10 beautiful and distinct colors
 AVAILABLE_COLORS = {
-    "red": "red",
-    "green": "green", 
+    "red": "light_coral",
+    "green": "medium_spring_green", 
     "blue": "blue",
-    "yellow": "yellow",
-    "cyan": "cyan",
-    "magenta": "magenta",
-    "white": "white",
-    "bright_red": "bright_red",
-    "bright_green": "bright_green",
-    "bright_blue": "bright_blue", 
-    "bright_yellow": "bright_yellow",
-    "bright_cyan": "bright_cyan",
-    "bright_magenta": "bright_magenta",
-    "bright_white": "bright_white",
-    "orange": "dark_orange",
-    "purple": "purple",
-    "pink": "hot_pink"
+    "yellow": "khaki1",
+    "sky_blue": "light_sky_blue1",     # Beautiful pastel blue
+    "sage_green": "dark_sea_green2",   # Soft sage green
+    "lavender": "medium_purple1",      # Gentle lavender purple
+    "gold": "gold1",                   # Rich gold
+    "mint": "aquamarine1",             # Fresh mint green
+    "rose": "hot_pink2",               # Elegant rose pink
+    "salmon": "salmon1",               # New default primary option
+    "peach": "navajo_white1",          # Soft peach
+    "teal": "dark_turquoise",          # Sophisticated teal
+    "periwinkle": "cornflower_blue"    # Soft periwinkle blue
 }
 
 def get_config_path() -> Path:

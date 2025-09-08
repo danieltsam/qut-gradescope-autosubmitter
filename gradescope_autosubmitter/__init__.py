@@ -4,7 +4,14 @@ QUT Gradescope Auto Submitter
 A secure, production-ready tool for automating Gradescope submissions for QUT students.
 """
 
-__version__ = "1.0.0"
+import importlib.metadata
+
+try:
+    __version__ = importlib.metadata.version("qut-gradescope-autosubmitter")
+except importlib.metadata.PackageNotFoundError:
+    # Fallback for development mode
+    __version__ = "1.2.0-dev"
+
 __author__ = "Daniel Sam"
 __email__ = "daniel.sam@gmx.com"
 

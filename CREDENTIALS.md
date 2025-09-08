@@ -1,51 +1,49 @@
-# Credential Management - QUT Gradescope Auto Submitter
+# Credential Management Guide
 
 Complete guide to setting up and managing your QUT credentials securely.
 
-## 🔐 Where are my credentials stored?
+## Where Credentials Are Stored
 
-Your Gradescope login can be saved in a user-level file so it works across all your projects:
+Your Gradescope login can be saved in a user-level file that works across all your projects:
 
 - **Windows:** `%LOCALAPPDATA%\qut_gradescope_autosubmitter\.env`
 - **macOS/Linux:** `~/.qut-gradescope-autosubmitter/.env`
 
-This means:
-- ✅ Works across all your programming projects
-- ✅ Won't accidentally get shared when you zip/upload projects
-- ✅ Easy to delete when you're done with the class
+**Benefits:**
+- Works across all your programming projects
+- Won't accidentally get shared when you zip/upload projects
+- Easy to delete when you're done with the class
 
-Project-level `.env` files are also supported and will override the user-level values if present.
+Project-level `.env` files are also supported and will override user-level settings if present.
 
-## 👤 Managing your credentials
-
-### Interactive Setup (Recommended)
+## Interactive Setup (Recommended)
 
 ```bash
 gradescope credentials
 ```
 
-**Main Menu:**
+**Main Menu Options:**
 1. **Manage saved credentials (.env, user-level)** - Recommended for persistent use
 2. **Environment variables (session/system)** - Advanced users
 3. **Exit**
 
-**Saved Credentials Options:**
+**Saved Credentials Submenu:**
 1. **Save/update credentials** - Enter/re-enter your QUT login
 2. **Delete saved credentials** - Remove the .env file completely
 3. **Back**
 
-### What's a .env file?
+## What Is a .env File?
 
-Think of it like saving your Wi‑Fi password on your laptop — you enter it once, and your computer remembers it so you don't have to type it every time.
+Think of it like saving your Wi-Fi password on your laptop — you enter it once, and your computer remembers it so you don't have to type it every time.
 
 This tool can save your Gradescope username and password in a `.env` file so it can log you in automatically next time.
 
 **Security Notes:**
-- ⚠️ Anyone with access to your user account can read this file
-- 💡 Consider OS keychain or environment variables for stronger security
-- 🔒 Don't commit `.env` files to Git repositories
+- Anyone with access to your user account can read this file
+- Consider OS keychain or environment variables for stronger security
+- Don't commit `.env` files to Git repositories
 
-## 🔄 All Setup Methods
+## All Setup Methods
 
 ### 1. Interactive .env (Easiest)
 
@@ -54,12 +52,12 @@ gradescope credentials → 1 → 1
 # Enter your QUT username and password when prompted
 ```
 
-**Pros:** Easy setup, works everywhere, persistent
+**Pros:** Easy setup, works everywhere, persistent  
 **Cons:** Stored in plaintext file
 
 ### 2. Submit-time Prompts
 
-If no credentials are found, `gradescope submit` will prompt:
+If no credentials are found, `gradescope submit` will prompt you to:
 
 1. **Enter and save to .env** (recommended)
 2. **Enter once for this run** (temporary)
@@ -70,12 +68,10 @@ If no credentials are found, `gradescope submit` will prompt:
 **Session-only (temporary):**
 ```bash
 # Windows PowerShell
-$env:GRADESCOPE_USERNAME = "n12345678"
-$env:GRADESCOPE_PASSWORD = "your_password"
+$env:GRADESCOPE_USERNAME='n12345678'; $env:GRADESCOPE_PASSWORD='your_password'
 
 # Linux/Mac
-export GRADESCOPE_USERNAME="n12345678"
-export GRADESCOPE_PASSWORD="your_password"
+export GRADESCOPE_USERNAME='n12345678'; export GRADESCOPE_PASSWORD='your_password'
 ```
 
 **Permanent system variables:**
@@ -101,7 +97,7 @@ GRADESCOPE_PASSWORD=your_password
 
 **Remember:** Add `.env` to your `.gitignore`!
 
-## 🔒 Security Comparison
+## Security Comparison
 
 | Method | Security Level | Convenience | Team Friendly |
 |--------|---------------|-------------|---------------|
@@ -109,13 +105,12 @@ GRADESCOPE_PASSWORD=your_password
 | System env vars | ⭐⭐⭐ | ⭐⭐ | ⭐ |
 | Session env vars | ⭐⭐ | ⭐ | ⭐ |
 | Project .env | ⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
-| CLI flags | ⭐ | ⭐ | ⭐ |
 
 **Most Secure:** OS keychain (not yet implemented) or system environment variables  
 **Most Convenient:** User-level .env file  
 **Best for Teams:** Project .env with proper `.gitignore`
 
-## 🧹 Removing Credentials
+## Removing Credentials
 
 ### Delete User-level .env
 ```bash
@@ -130,20 +125,14 @@ rm ~/.qut-gradescope-autosubmitter/.env
 ```
 
 ### Clear Environment Variables
+```powershell
+# Windows PowerShell
+Remove-Item Env:GRADESCOPE_USERNAME; Remove-Item Env:GRADESCOPE_PASSWORD
+```
+
 ```bash
-# Session variables
-# Windows
-Remove-Variable GRADESCOPE_USERNAME, GRADESCOPE_PASSWORD
-
 # Linux/Mac
-unset GRADESCOPE_USERNAME GRADESCOPE_PASSWORD
-
-# System variables
-# Windows
-setx GRADESCOPE_USERNAME ""
-setx GRADESCOPE_PASSWORD ""
-
-# Linux/Mac: Remove from ~/.bashrc, ~/.zshrc, etc.
+unset GRADESCOPE_USERNAME; unset GRADESCOPE_PASSWORD
 ```
 
 ### Delete Project .env
@@ -155,7 +144,7 @@ Remove-Item .env
 rm .env
 ```
 
-## 🎯 Credential Priority Order
+## Credential Priority Order
 
 The tool checks credentials in this order:
 
@@ -165,7 +154,7 @@ The tool checks credentials in this order:
 4. **Project .env** (`./.env`)
 5. **Interactive prompt** (if none found)
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Password Issues
 
@@ -199,8 +188,8 @@ ls -la ~/.qut-gradescope-autosubmitter/.env
 cat ~/.qut-gradescope-autosubmitter/.env
 ```
 
-## 📖 Related Documentation
+## Related Documentation
 
-- [README.md](README.md) - Quick start guide
-- [CLI_REFERENCE.md](CLI_REFERENCE.md) - Complete command reference
-- [TESTING_GUIDE.md](TESTING_GUIDE.md) - Testing procedures
+- **[Main README](../README.md)** - Quick start guide and overview
+- **[Command Reference](CLI_REFERENCE.md)** - Complete command documentation
+- **[Automation Setup](GITHUB_ACTIONS_SETUP.md)** - Git hooks and GitHub Actions

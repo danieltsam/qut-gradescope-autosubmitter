@@ -38,9 +38,17 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-chromium
+        restore-keys: |
+          playwright-${{ runner.os }}-
         
     - name: Install dependencies
       run: |
@@ -84,6 +92,7 @@ jobs:
         GRADESCOPE_USERNAME: ${{ secrets.GRADESCOPE_USERNAME }}
         GRADESCOPE_PASSWORD: ${{ secrets.GRADESCOPE_PASSWORD }}
       run: |
+        set -euo pipefail
         echo "🎯 Starting manual Gradescope submission..."
         echo "Course: ${{ github.event.inputs.course }}"
         echo "Assignment: ${{ github.event.inputs.assignment }}"
@@ -97,7 +106,7 @@ jobs:
         echo "✅ Manual submission completed"
         
     - name: Upload submission artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: manual-submission-${{ github.event.inputs.course }}-${{ github.event.inputs.assignment }}-${{ github.run_number }}
         path: ${{ github.event.inputs.zip_name }}

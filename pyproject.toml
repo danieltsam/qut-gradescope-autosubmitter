@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qut-gradescope-autosubmitter"
-version = "1.1.4"
-description = "Automated Gradescope submission tool for QUT students - Currently on TestPyPI"
+version = "1.0.1"
+description = "Automated Gradescope submission tool for QUT students with a pretty CLI interface"
 readme = "README.md"
 authors = [
     {name = "Daniel Sam", email = "daniel.sam@gmx.com"}

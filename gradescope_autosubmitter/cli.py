@@ -65,7 +65,7 @@ def show_version():
 Version: [{colors['success']}]{__version__}[/{colors['success']}]
 
 [dim]Secure automation tool for QUT Gradescope submissions[/dim]
-[dim]Repository: https://github.com/qut-cab/gradescope-autosubmitter[/dim]"""
+[dim]Repository: https://github.com/danieltsam/qut-gradescope-autosubmitter[/dim]"""
     
     panel = Panel(
         content,
@@ -128,10 +128,179 @@ def show_help(ctx):
     console.print()
     console.print(f"[dim]For detailed command help: [{colors['primary']}]gradescope COMMAND --help[/{colors['primary']}][/dim]")
 
+def show_submit_help():
+    """Display help for the submit command with Rich formatting."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    
+    colors = get_colors()
+    
+    # Create main help panel
+    content = f"""[bold {colors['primary']}]gradescope submit[/bold {colors['primary']}] - Submit files to Gradescope
+
+[dim]Automatically bundles your project files, logs into QUT SSO, navigates to the specified
+course and assignment, and submits your files to Gradescope.[/dim]
+
+[bold]Usage:[/bold] [{colors['warning']}]gradescope submit [OPTIONS][/{colors['warning']}]"""
+    
+    help_panel = Panel(
+        content,
+        title="Submit Command Help",
+        border_style=colors['primary'],
+        box=box.ROUNDED
+    )
+    
+    # Create options table
+    options_table = Table(title="Options", box=box.ROUNDED)
+    options_table.add_column("Option", style=colors['primary'], no_wrap=True)
+    options_table.add_column("Description", style="white")
+    
+    # Basic options
+    options_table.add_row("-c, --course", "Course name (e.g., CAB201)")
+    options_table.add_row("-a, --assignment", "Assignment name (e.g., Assignment 2)")
+    options_table.add_row("-f, --file", "Output zip file name (default: submission.zip)")
+    options_table.add_row("-b, --bundle", "File patterns to bundle (can be used multiple times)")
+    options_table.add_row("-u, --username", "QUT username (or set GRADESCOPE_USERNAME env var)")
+    options_table.add_row("-p, --password", "QUT password (or set GRADESCOPE_PASSWORD env var)")
+    
+    # Advanced options
+    options_table.add_row("--config", "Path to config file")
+    options_table.add_row("--headless", "Run browser in headless mode")
+    options_table.add_row("--no-grade-wait", "Don't wait for grade to appear")
+    options_table.add_row("--fresh-login", "Force fresh login (ignore saved session)")
+    options_table.add_row("--manual-login", "Open browser for manual login (maximum security)")
+    options_table.add_row("--no-session-save", "Don't save credentials to session env vars")
+    
+    # Examples table
+    examples_table = Table(title="Examples", box=box.ROUNDED)
+    examples_table.add_column("Command", style=colors['primary'])
+    examples_table.add_column("Description", style="white")
+    
+    examples_table.add_row("gradescope submit", "Submit using config file settings")
+    examples_table.add_row("gradescope submit --headless", "Submit in background (no browser window)")
+    examples_table.add_row("gradescope submit -c cab201 -a t6q1", "Override course and assignment")
+    examples_table.add_row("gradescope submit -b '*.py' -b '*.txt'", "Submit only Python and text files")
+    examples_table.add_row("gradescope submit --manual-login", "Maximum security - login in browser")
+    
+    console.print(help_panel)
+    console.print()
+    console.print(options_table)
+    console.print()
+    console.print(examples_table)
+    console.print()
+
+def show_init_help():
+    """Display help for the init command with Rich formatting."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    
+    colors = get_colors()
+    
+    # Create main help panel
+    content = f"""[bold {colors['primary']}]gradescope init[/bold {colors['primary']}] - Create configuration file
+
+[dim]Creates a sample gradescope.yml configuration file in the current directory
+with default settings that you can customize for your project.[/dim]
+
+[bold]Usage:[/bold] [{colors['warning']}]gradescope init [OPTIONS][/{colors['warning']}]"""
+    
+    help_panel = Panel(
+        content,
+        title="Init Command Help",
+        border_style=colors['primary'],
+        box=box.ROUNDED
+    )
+    
+    # Create options table
+    options_table = Table(title="Options", box=box.ROUNDED)
+    options_table.add_column("Option", style=colors['primary'], no_wrap=True)
+    options_table.add_column("Description", style="white")
+    
+    options_table.add_row("-p, --path", "Config file path (default: gradescope.yml)")
+    
+    # Examples table
+    examples_table = Table(title="Examples", box=box.ROUNDED)
+    examples_table.add_column("Command", style=colors['primary'])
+    examples_table.add_column("Description", style="white")
+    
+    examples_table.add_row("gradescope init", "Create gradescope.yml in current directory")
+    examples_table.add_row("gradescope init --path my-config.yml", "Create config with custom filename")
+    examples_table.add_row("gradescope init -p ../project.yml", "Create config in parent directory")
+    
+    console.print(help_panel)
+    console.print()
+    console.print(options_table)
+    console.print()
+    console.print(examples_table)
+    console.print()
+
+def show_validate_help():
+    """Display help for the validate command with Rich formatting."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    
+    colors = get_colors()
+    
+    # Create main help panel
+    content = f"""[bold {colors['primary']}]gradescope validate[/bold {colors['primary']}] - Validate configuration
+
+[dim]Checks your gradescope.yml configuration file for errors and displays
+a comprehensive status report including credentials, settings, and system requirements.[/dim]
+
+[bold]Usage:[/bold] [{colors['warning']}]gradescope validate [OPTIONS][/{colors['warning']}]"""
+    
+    help_panel = Panel(
+        content,
+        title="Validate Command Help",
+        border_style=colors['primary'],
+        box=box.ROUNDED
+    )
+    
+    # Create options table
+    options_table = Table(title="Options", box=box.ROUNDED)
+    options_table.add_column("Option", style=colors['primary'], no_wrap=True)
+    options_table.add_column("Description", style="white")
+    
+    options_table.add_row("--config", "Path to config file (default: gradescope.yml)")
+    
+    # Examples table
+    examples_table = Table(title="Examples", box=box.ROUNDED)
+    examples_table.add_column("Command", style=colors['primary'])
+    examples_table.add_column("Description", style="white")
+    
+    examples_table.add_row("gradescope validate", "Check default gradescope.yml configuration")
+    examples_table.add_row("gradescope validate --config my-config.yml", "Check custom configuration file")
+    
+    # What it checks section
+    checks_content = f"""• Configuration file syntax and required fields
+• Course and assignment settings
+• File bundling patterns
+• Security and behavior settings
+• Credential availability (username/password)
+• System requirements (Python, Playwright)"""
+    
+    checks_panel = Panel(
+        checks_content,
+        title="What Gets Validated",
+        border_style=colors['primary'],
+        box=box.ROUNDED
+    )
+    
+    console.print(help_panel)
+    console.print()
+    console.print(options_table)
+    console.print()
+    console.print(examples_table)
+    console.print()
+    console.print(checks_panel)
+    console.print()
+
 
 @cli.command()
 # Single-character flags first
-
 @click.option('-c', '--course', help='Course name (e.g., CAB201)')
 @click.option('-a', '--assignment', help='Assignment name (e.g., Assignment 2)')
 @click.option('-f', '--file', 'zip_name', help='Output zip file name (default: submission.zip)')
@@ -145,8 +314,14 @@ def show_help(ctx):
 @click.option('--fresh-login', is_flag=True, help='Force fresh login (ignore saved session)')
 @click.option('--manual-login', is_flag=True, help='Open browser for manual login (maximum security)')
 @click.option('--no-session-save', is_flag=True, help='Don\'t save credentials to session env vars')
-def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait, fresh_login, manual_login, no_session_save, username, password):
+@click.option('--help', is_flag=True, help='Show help for this command')
+@click.pass_context
+def submit(ctx, config, course, assignment, zip_name, bundle, headless, no_grade_wait, fresh_login, manual_login, no_session_save, username, password, help):
     """Submit files to Gradescope."""
+    if help:
+        show_submit_help()
+        return
+    
     try:
         # Load configuration
         cfg = Config(config)
@@ -177,7 +352,7 @@ def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait
         
         if not course or not assignment:
             click.echo("❌ Course and assignment are required. Set them in config file or use --course and --assignment")
-            return 1
+            sys.exit(1)
         
         # Handle different credential modes
         if manual_login:
@@ -194,13 +369,14 @@ def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait
             password = os.getenv('GRADESCOPE_PASSWORD')
             
             if not username or not password:
+                colors = get_colors()
                 click.echo("❌ No credentials found!")
                 click.echo("\nOptions:")
-                click.echo("1) Enter and save to .env (local project file)")
-                click.echo("2) Enter once for this run")
-                click.echo("3) Cancel")
+                click.echo("[1] Enter and save to .env (local project file)")
+                click.echo("[2] Enter once for this run")
+                click.echo("[3] Cancel")
 
-                choice = click.prompt("Choose 1-3", type=int, default=1)
+                choice = click.prompt(f"Choose [1/2/3]", type=int, default=1)
 
                 if choice == 1:
                     from .credentials import get_credentials
@@ -209,7 +385,7 @@ def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait
                         log("Using credentials saved to .env")
                     except Exception as e:
                         click.echo(f"❌ Error: {e}")
-                        return 1
+                        sys.exit(1)
                 elif choice == 2:
                     from .credentials import get_credentials
                     try:
@@ -217,12 +393,12 @@ def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait
                         log("Using one-time credentials")
                     except Exception as e:
                         click.echo(f"❌ Error: {e}")
-                        return 1
+                        sys.exit(1)
                 else:
                     click.echo("\n💡 To set persistent credentials:")
                     click.echo("   Run 'gradescope credentials' to see setup commands")
                     click.echo("   Or set GRADESCOPE_USERNAME and GRADESCOPE_PASSWORD")
-                    return 1
+                    sys.exit(1)
             else:
                 creds = (username, password)
                 log("Credentials loaded from environment")
@@ -248,19 +424,25 @@ def submit(config, course, assignment, zip_name, bundle, headless, no_grade_wait
         click.echo("2. Run 'gradescope credentials' to see credential setup commands")
         click.echo("3. Set environment variables: GRADESCOPE_USERNAME and GRADESCOPE_PASSWORD")
         click.echo("4. Or use --username and --password flags (less secure)")
-        return 1
+        sys.exit(1)
     except KeyboardInterrupt:
         click.echo("\n\nOperation cancelled by user\n")
-        return 1
+        sys.exit(1)
     except Exception as e:
         click.echo(f"\n❌ Unexpected error: {e}\n")
-        return 1
+        sys.exit(1)
 
 
 @cli.command()
 @click.option('--path', '-p', default='gradescope.yml', help='Config file path (default: gradescope.yml)')
-def init(path):
+@click.option('--help', is_flag=True, help='Show help for this command')
+@click.pass_context
+def init(ctx, path, help):
     """Create an example configuration file."""
+    if help:
+        show_init_help()
+        return
+    
     from .rich_console import console, get_colors
     
     if Path(path).exists():
@@ -293,8 +475,14 @@ def init(path):
 
 @cli.command()
 @click.option('--config', help='Path to config file')
-def validate(config):
+@click.option('--help', is_flag=True, help='Show help for this command')
+@click.pass_context
+def validate(ctx, config, help):
     """Validate configuration file."""
+    if help:
+        show_validate_help()
+        return
+    
     from .rich_console import console, get_colors, log_success, log_error
     from rich.panel import Panel
     from rich.table import Table
@@ -481,22 +669,25 @@ def ui():
         """Customize UI colors."""
         import os
         os.system('cls' if os.name == 'nt' else 'clear')  # More aggressive clear
-        from .rich_console import get_colors
         colors = get_colors()
         console.print(f"[bold {colors['primary']}]Customize Colors[/bold {colors['primary']}]\n")
         
         categories = get_color_categories()
         current_colors = get_current_colors()
+        # Build reverse map from rich code -> friendly name
+        available_map = get_available_colors()
+        reverse_color_map = {v: k for k, v in available_map.items()}
         
         for i, category in enumerate(categories, 1):
             current_color = current_colors.get(category, 'cyan')
-            console.print(f"[{colors['primary']}]{i}[/{colors['primary']}] [bold]{category.title()}[/bold]: [{current_color}]■[/{current_color}] {current_color}")
+            friendly_name = reverse_color_map.get(current_color, current_color)
+            console.print(f"[{colors['primary']}][{i}][/{colors['primary']}] [bold]{category.title()}[/bold]: [{current_color}]■[/{current_color}] {friendly_name}")
         
-        console.print(f"[{colors['primary']}]{len(categories) + 1}[/{colors['primary']}] Reset to defaults")
-        console.print(f"[{colors['primary']}]{len(categories) + 2}[/{colors['primary']}] Back to menu")
+        console.print(f"[{colors['primary']}][{len(categories) + 1}][/{colors['primary']}] Reset to defaults")
+        console.print(f"[{colors['primary']}][{len(categories) + 2}][/{colors['primary']}] Back to menu")
         
         try:
-            choice = Prompt.ask("Choose color to change", choices=[str(i) for i in range(1, len(categories) + 3)])
+            choice = Prompt.ask(f"Choose color to change [{colors['primary']}][1-{len(categories) + 2}][/{colors['primary']}]", choices=[str(i) for i in range(1, len(categories) + 3)], show_choices=False)
             choice_idx = int(choice) - 1
             
             if choice_idx < len(categories):
@@ -518,7 +709,6 @@ def ui():
         """Change a specific color category."""
         import os
         os.system('cls' if os.name == 'nt' else 'clear')  # More aggressive clear
-        from .rich_console import get_colors
         colors = get_colors()
         console.print(f"[bold {colors['primary']}]Choose {category.title()} Color[/bold {colors['primary']}]\n")
         
@@ -529,14 +719,15 @@ def ui():
         colors_list = list(available_colors.items())
         for i, (name, value) in enumerate(colors_list, 1):
             marker = f" [{colors['success']}](current)[/{colors['success']}]" if value == current_color else ""
-            console.print(f"[{colors['primary']}]{i:2}[/{colors['primary']}] [{value}]■[/{value}] {name.title()}{marker}")
+            console.print(f"[{colors['primary']}][{i:02}][/{colors['primary']}] [{value}]■[/{value}] {name.title()}{marker}")
             if i % 3 == 0:  # New line every 3 colors
                 console.print()
         
-        console.print(f"[{colors['primary']}]{len(colors_list) + 1}[/{colors['primary']}] Back to color menu")
+        console.print(f"[{colors['primary']}][{len(colors_list) + 1}][/{colors['primary']}] Back to color menu")
         
         try:
-            choice = Prompt.ask("Choose color", choices=[str(i) for i in range(1, len(colors_list) + 2)])
+            colors = get_colors()
+            choice = Prompt.ask(f"Choose color [{colors['primary']}][1-{len(colors_list) + 1}][/{colors['primary']}]", choices=[str(i) for i in range(1, len(colors_list) + 2)], show_choices=False)
             choice_idx = int(choice) - 1
             
             if choice_idx < len(colors_list):
@@ -557,7 +748,6 @@ def ui():
         
         import os
         os.system('cls' if os.name == 'nt' else 'clear')  # More aggressive clear
-        from .rich_console import get_colors
         colors = get_colors()
         console.print(f"[bold {colors['primary']}]UI Settings[/bold {colors['primary']}]\n")
         
@@ -570,12 +760,13 @@ def ui():
         
         for i, (key, name, value) in enumerate(settings, 1):
             status = "On" if value else "Off"
-            console.print(f"[{colors['primary']}]{i}[/{colors['primary']}] {name}: {status}")
+            console.print(f"[{colors['primary']}][{i}][/{colors['primary']}] {name}: {status}")
         
-        console.print(f"[{colors['primary']}]{len(settings) + 1}[/{colors['primary']}] Back to menu")
+        console.print(f"[{colors['primary']}][{len(settings) + 1}][/{colors['primary']}] Back to menu")
         
         try:
-            choice = Prompt.ask("Toggle setting", choices=[str(i) for i in range(1, len(settings) + 2)], )
+            colors = get_colors()
+            choice = Prompt.ask(f"Toggle setting [{colors['primary']}][1-{len(settings) + 1}][/{colors['primary']}]", choices=[str(i) for i in range(1, len(settings) + 2)], show_choices=False)
             choice_idx = int(choice) - 1
             
             if choice_idx < len(settings):
@@ -594,15 +785,14 @@ def ui():
         try:
             show_current_config()
             
-            from .rich_console import get_colors
             colors = get_colors()
             console.print(f"\n[bold]Options:[/bold]")
-            console.print(f"[{colors['primary']}]1[/{colors['primary']}] Customize colors")
-            console.print(f"[{colors['primary']}]2[/{colors['primary']}] Toggle settings")
-            console.print(f"[{colors['primary']}]3[/{colors['primary']}] Reset to defaults")
-            console.print(f"[{colors['primary']}]4[/{colors['primary']}] Exit")
+            console.print(f"[{colors['primary']}][1][/{colors['primary']}] Customize colors")
+            console.print(f"[{colors['primary']}][2][/{colors['primary']}] Toggle settings")
+            console.print(f"[{colors['primary']}][3][/{colors['primary']}] Reset to defaults")
+            console.print(f"[{colors['primary']}][4][/{colors['primary']}] Exit")
             
-            choice = Prompt.ask("Choose", choices=["1", "2", "3", "4"])
+            choice = Prompt.ask(f"Choose [{colors['primary']}][1/2/3/4][/{colors['primary']}]", choices=["1", "2", "3", "4"], show_choices=False)
             
             if choice == "1":
                 customize_colors()
@@ -645,16 +835,26 @@ def credentials():
         )
         
         console.print(submenu)
-        choice = Prompt.ask("❯ Choose", choices=["1", "2", "3"], )
+        colors = get_colors()
+        choice = Prompt.ask(f"❯ Choose [{colors['primary']}][1/2/3][/{colors['primary']}]", choices=["1", "2", "3"], show_choices=False)
         
         if choice == "1":
-            from .rich_console import get_colors
             colors = get_colors()
             console.print(f"\n[{colors['primary']}]Setting up credentials...[/{colors['primary']}]")
             try:
                 from .credentials import get_credentials
-                get_credentials(set_session_vars=False, persist_to_env=True, force_prompt=True)
+                # Save/update credentials to user-level .env
+                creds = get_credentials(set_session_vars=False, persist_to_env=True, force_prompt=True)
+                # Reload user-level .env into current process so UI reflects immediately
+                user_env_path = _user_env_path()
+                if user_env_path.exists():
+                    load_dotenv(dotenv_path=user_env_path, override=True)
+                # Also set directly into this process for immediate reflection
+                if isinstance(creds, tuple) and len(creds) == 2:
+                    os.environ['GRADESCOPE_USERNAME'] = creds[0]
+                    os.environ['GRADESCOPE_PASSWORD'] = creds[1]
                 log_success("Saved credentials to user-level .env")
+                Prompt.ask("\nPress Enter to continue", default="")
             except Exception as e:
                 log_error(f"Error: {e}")
                 Prompt.ask("\nPress Enter to continue", default="")
@@ -663,7 +863,11 @@ def credentials():
             try:
                 if user_env.exists():
                     user_env.unlink()
+                    # Clear from current session so UI reflects immediately
+                    os.environ.pop('GRADESCOPE_USERNAME', None)
+                    os.environ.pop('GRADESCOPE_PASSWORD', None)
                     log_success(f"Deleted: {user_env}")
+                    Prompt.ask("\nPress Enter to continue", default="")
                 else:
                     log_warning(f"No credentials file found")
             except Exception as e:
@@ -685,7 +889,8 @@ def credentials():
                 )
                 
                 console.print(submenu)
-                choice = Prompt.ask("❯ Choose", choices=["1", "2", "3", "4"])
+                colors = get_colors()
+                choice = Prompt.ask(f"❯ Choose [{colors['primary']}][1/2/3/4][/{colors['primary']}]", choices=["1", "2", "3", "4"], show_choices=False)
                 
                 if choice == "1":
                     show_set_env_commands()
@@ -703,16 +908,13 @@ def credentials():
         """Show commands to set environment variables."""
         import os
         os.system('cls' if os.name == 'nt' else 'clear')
-        from .rich_console import get_colors
         colors = get_colors()
         
         help_panel = create_submenu_panel(
             "📝 Setting Environment Variables",
             [
-                "Windows PowerShell: $env:GRADESCOPE_USERNAME='n12345678'",
-                "Windows PowerShell: $env:GRADESCOPE_PASSWORD='your_password'",
-                "Linux/Mac: export GRADESCOPE_USERNAME='n12345678'",
-                "Linux/Mac: export GRADESCOPE_PASSWORD='your_password'"
+                "Windows PowerShell: $env:GRADESCOPE_USERNAME='n12345678'; $env:GRADESCOPE_PASSWORD='your_password'",
+                "Linux/Mac: export GRADESCOPE_USERNAME='n12345678'; export GRADESCOPE_PASSWORD='your_password'"
             ],
             "Back to environment menu"
         )
@@ -727,16 +929,14 @@ def credentials():
         """Show commands to delete environment variables."""
         import os
         os.system('cls' if os.name == 'nt' else 'clear')
-        from .rich_console import get_colors
         colors = get_colors()
         
         help_panel = create_submenu_panel(
             "🗑️  Deleting Environment Variables",
             [
-                "Windows PowerShell: Remove-Item Env:GRADESCOPE_USERNAME",
-                "Windows PowerShell: Remove-Item Env:GRADESCOPE_PASSWORD",
-                "Linux/Mac: unset GRADESCOPE_USERNAME",
-                "Linux/Mac: unset GRADESCOPE_PASSWORD"
+                "Windows PowerShell: Remove-Item Env:GRADESCOPE_USERNAME; Remove-Item Env:GRADESCOPE_PASSWORD",
+                "Windows PowerShell (alt): $env:GRADESCOPE_USERNAME=$null; $env:GRADESCOPE_PASSWORD=$null",
+                "Linux/Mac: unset GRADESCOPE_USERNAME; unset GRADESCOPE_PASSWORD"
             ],
             "Back to environment menu"
         )
@@ -751,7 +951,6 @@ def credentials():
         """Show current environment variable status."""
         import os
         os.system('cls' if os.name == 'nt' else 'clear')
-        from .rich_console import get_colors
         colors = get_colors()
         
         username = os.getenv('GRADESCOPE_USERNAME')
@@ -782,7 +981,8 @@ def credentials():
             
             console.clear()
             console.print(interface)
-            choice = Prompt.ask("❯ Choose", choices=["1", "2", "3"], )
+            colors = get_colors()
+            choice = Prompt.ask(f"❯ Choose [{colors['primary']}][1/2/3][/{colors['primary']}]", choices=["1", "2", "3"], show_choices=False)
             
             if choice == "1":
                 handle_saved_credentials()
@@ -814,7 +1014,6 @@ def hooks():
     hooks_dir = Path('.git/hooks')
     hooks_dir.mkdir(exist_ok=True)
     
-    from .rich_console import get_colors
     colors = get_colors()
     
     def show_hooks_menu():
@@ -935,13 +1134,14 @@ fi
         console.print(f"[bold {colors['primary']}]Quick Git Hooks Setup[/bold {colors['primary']}]\n")
         console.print("[dim]Quick hooks submit to Gradescope but don't wait for grades[/dim]\n")
         
-        console.print(f"[{colors['primary']}]1[/{colors['primary']}] Install quick pre-commit hook")
-        console.print(f"[{colors['primary']}]2[/{colors['primary']}] Install quick post-commit hook") 
-        console.print(f"[{colors['primary']}]3[/{colors['primary']}] Install both quick hooks")
-        console.print(f"[{colors['primary']}]4[/{colors['primary']}] Back to main menu")
+        console.print(f"[{colors['primary']}][1][/{colors['primary']}] Install quick pre-commit hook")
+        console.print(f"[{colors['primary']}][2][/{colors['primary']}] Install quick post-commit hook") 
+        console.print(f"[{colors['primary']}][3][/{colors['primary']}] Install both quick hooks")
+        console.print(f"[{colors['primary']}][4][/{colors['primary']}] Back to main menu")
         
         try:
-            choice = Prompt.ask("Choose option", choices=["1", "2", "3", "4"])
+            colors = get_colors()
+            choice = Prompt.ask(f"Choose option [{colors['primary']}][1/2/3/4][/{colors['primary']}]", choices=["1", "2", "3", "4"], show_choices=False)
             
             if choice == "1":
                 create_quick_pre_commit_hook()
@@ -1006,17 +1206,18 @@ fi
         try:
             pre_commit_exists, post_commit_exists = show_hooks_menu()
             
-            choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4", "5", "6"])
+            colors = get_colors()
+            choice = Prompt.ask(f"Choose an option [{colors['primary']}][1/2/3/4/5/6][/{colors['primary']}]", choices=["1", "2", "3", "4", "5", "6"], show_choices=False)
             
             if choice == "1":
                 if pre_commit_exists:
-                    if Prompt.ask("Pre-commit hook already exists. Overwrite?", choices=["y", "n"], default="n") == "y":
+                    if Prompt.ask(f"Pre-commit hook already exists. Overwrite? [{colors['primary']}][y/n][/{colors['primary']}]", choices=["y", "n"], default="n", show_choices=False) == "y":
                         create_pre_commit_hook()
                 else:
                     create_pre_commit_hook()
             elif choice == "2":
                 if post_commit_exists:
-                    if Prompt.ask("Post-commit hook already exists. Overwrite?", choices=["y", "n"], default="n") == "y":
+                    if Prompt.ask(f"Post-commit hook already exists. Overwrite? [{colors['primary']}][y/n][/{colors['primary']}]", choices=["y", "n"], default="n", show_choices=False) == "y":
                         create_post_commit_hook()
                 else:
                     create_post_commit_hook()
@@ -1040,11 +1241,13 @@ fi
 def doctor():
     """Check system requirements and configuration."""
     console.clear()
-    from .rich_console import get_colors
     colors = get_colors()
     console.print(f"[bold {colors['primary']}]System Diagnostics[/bold {colors['primary']}]\n")
-    
+
     checks = []
+    from rich.status import Status
+    status = console.status("[dim]Running system checks...[/dim]", spinner="dots")
+    status.start()
     
     # Check Python version
     import sys
@@ -1196,6 +1399,7 @@ def doctor():
     # Create and display table
     from .rich_console import create_doctor_table
     table = create_doctor_table(checks)
+    status.stop()
     console.print(table)
     
     # Count issues
