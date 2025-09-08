@@ -53,21 +53,21 @@ Everything runs locally using browser automation. No data leaves your machine ex
 
 ## ✨ Key Features
 
-### Beautiful Terminal Interface
+### 🎨 Beautiful Terminal Interface
 Modern CLI built with Rich - panels, progress bars, and custom themes that make terminal work enjoyable.
 
-### Flexible Authentication
+### 🔐 Flexible Authentication
 - **Session persistence** - Stay logged in between submissions (faster)
 - **Multiple credential options** - Environment variables, .env files, or interactive prompts
 - **Manual login mode** - Browser-based authentication for maximum security
 
-### Smart Automation
+### 🤖 Smart Automation
 - **Fuzzy matching** - Finds courses/assignments even with partial names
 - **Automatic file detection** - Bundles relevant files intelligently
 - **Git integration** - Optional hooks for submit-on-commit workflows
 - **CI/CD ready** - GitHub Actions support for automated submissions
 
-### Developer Experience
+### 🛠️ Developer Experience
 - **Cross-platform** - Windows, macOS, Linux support
 - **Rich help system** - Beautiful documentation and error messages
 - **System diagnostics** - Built-in troubleshooting tools
