@@ -27,7 +27,8 @@ This tool automates the entire submission process so you can focus on coding, no
 ```bash
 # Install
 pip install qut-gradescope-autosubmitter && playwright install chromium
-
+```
+```bash
 # One-time setup
 gradescope init        # Create config file
 gradescope credentials # Save QUT login
