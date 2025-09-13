@@ -244,7 +244,13 @@ class GradescopeSubmitter:
                     await page.wait_for_selector("a.courseBox", timeout=300000)  # 5 minutes
                     steps.complete_step("🔓 Manual login detected as complete!")
                 except:
-                    raise Exception("❌ Manual login timed out or failed")
+                    # Check if user is still on QUT login page (indicates failure)
+                    current_url = page.url
+                    if "qut.edu.au" in current_url and "auth" in current_url:
+                        log_error("❌ Manual QUT SSO Login Failed: Still on login page after timeout")
+                        raise Exception("❌ Manual QUT SSO login failed. Please check your credentials and try again.")
+                    else:
+                        raise Exception("❌ Manual login timed out or failed")
                     
             elif needs_login:
                 # Skip Gradescope homepage, go straight to QUT login
@@ -280,8 +286,60 @@ class GradescopeSubmitter:
                         pass  # Silent fail for Remember Me
                     
                     await page.click('button#kc-login')
-                    await page.wait_for_selector("a.courseBox")
-                    steps.complete_step("🔓 QUT login complete")
+                    
+                    # Wait for either success (course boxes) or failure indicators
+                    try:
+                        # Wait for success indicator (course boxes) with timeout
+                        await page.wait_for_selector("a.courseBox", timeout=10000)
+                        steps.complete_step("🔓 QUT login complete")
+                    except:
+                        # Check for login failure indicators
+                        await page.wait_for_timeout(2000)  # Give page time to load error messages
+                        
+                        # Check for common error messages
+                        error_indicators = [
+                            'Invalid username or password',
+                            'Invalid credentials',
+                            'Authentication failed',
+                            'Login failed',
+                            'Access denied',
+                            'Invalid username',
+                            'Invalid password',
+                            'Wrong username or password',
+                            'Authentication error',
+                            'Login error',
+                            'Failed to authenticate',
+                            'Invalid login',
+                            'Username or password incorrect',
+                            'Authentication unsuccessful'
+                        ]
+                        
+                        page_content = await page.content()
+                        current_url = page.url
+                        
+                        # Check if we're still on QUT login page (indicates failure)
+                        if "qut.edu.au" in current_url and "auth" in current_url:
+                            # Look for error messages in the page
+                            error_found = False
+                            for error_text in error_indicators:
+                                if error_text.lower() in page_content.lower():
+                                    log_error(f"❌ QUT SSO Login Failed: {error_text}")
+                                    error_found = True
+                                    break
+                            
+                            if not error_found:
+                                log_error("❌ QUT SSO Login Failed: Invalid credentials or authentication error")
+                            
+                            raise Exception("❌ QUT SSO login failed. Please check your username and password.")
+                        else:
+                            # If we're not on QUT page anymore, login might have succeeded
+                            # Try to find course boxes or other success indicators
+                            try:
+                                await page.wait_for_selector("a.courseBox", timeout=5000)
+                                steps.complete_step("🔓 QUT login complete")
+                            except:
+                                log_error("❌ QUT SSO Login Failed: Unable to reach Gradescope after login")
+                                raise Exception("❌ QUT SSO login failed. Unable to reach Gradescope after authentication.")
             else:
                 if current_url and "gradescope.com.au" in current_url:
                     log_info(f"Already on Gradescope from session check")
@@ -438,6 +496,12 @@ class GradescopeSubmitter:
             
             await page.wait_for_timeout(3000)
             steps.complete("File submitted successfully!")
+            
+            # Capture submission URL for headless mode
+            submission_url = page.url
+            if self.headless:
+                log_info(f"📎 Submission URL: {submission_url}")
+            
             self.print_submission_summary(course_label, assignment_label, file)
             
             if notify_when_graded:
