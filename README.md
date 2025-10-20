@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/42f96ca3-e640-4c72-8ba7-c43932be0d79
 As a QUT student, I was tired of:
 - Clicking through Gradescope 50+ times per assignment when trying to see if I met test cases
 - Being forced to wait when I'm trying to get quick feedback on my work
-- Losing focus switching between code editor and browser
+- Losing focus context switching between code editor and browser
 - Manual file compression, uploads and form submissions
 
 This tool automates the entire submission process so you can focus on coding, not clicking.
@@ -39,8 +39,10 @@ gradescope submit      # Submit current assignment
 
 That's it. No more manual submissions.
 
-
 *Or use it with your existing repository as a [Github Action](https://github.com/marketplace/actions/qut-gradescope-autosubmission)* 😊
+
+> To access the gradescope command in any directory on your machine, you may have to add the tool to your PATH. The installation places the 'gradescope' command in your user's local bin directory.
+
 
 ## 🔄 How It Works
 
