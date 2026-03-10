@@ -2,7 +2,7 @@
 
 import os
 from getpass import getpass
-from typing import Tuple
+from typing import Tuple, Optional
 from pathlib import Path
 
 
@@ -18,7 +18,7 @@ def _user_env_path() -> Path:
     return base / ".env"
 
 
-def _write_env_file(username: str, password: str, env_path: str | Path | None = None) -> None:
+def _write_env_file(username: str, password: str, env_path: Optional[Path] = None) -> None:
     """Create or update a local .env file with credentials."""
     # Default to user-level .env if path not provided
     path = Path(env_path) if env_path else _user_env_path()
