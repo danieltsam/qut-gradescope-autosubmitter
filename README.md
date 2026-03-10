@@ -43,6 +43,8 @@ That's it. No more manual submissions.
 
 > To access the gradescope command in any directory on your machine, you may have to add the tool to your PATH. The installation places the 'gradescope' command in your user's local bin directory.
 
+> **QUT 2FA requirement**
+> QUT now enforces 2FA on first login. On your **first** use, `gradescope` will open a browser and you’ll need to complete QUT SSO + 2FA manually. After that, Playwright stores a session so most submissions won’t need re-auth, but QUT may force re-login (and 2FA) more frequently than before.
 
 ## 🔄 How It Works
 
