@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qut-gradescope-autosubmitter"
-version = "1.0.4"
+version = "2.0.0"
 description = "Automated Gradescope submission tool for QUT students with a pretty CLI interface"
 readme = "README.md"
 authors = [
@@ -28,7 +28,17 @@ Issues = "https://github.com/danieltsam/qut-gradescope-autosubmitter/issues"
 gradescope = "gradescope_autosubmitter.cli:main"
 gs-submit = "gradescope_autosubmitter.cli:main"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["gradescope_autosubmitter*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 

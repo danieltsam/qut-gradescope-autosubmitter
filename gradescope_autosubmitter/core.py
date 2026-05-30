@@ -2,66 +2,57 @@
 
 import asyncio
 import os
+import subprocess
 import zipfile
 import time
 import shutil
-from datetime import datetime
 from fnmatch import fnmatch
 from typing import List, Tuple, Optional
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 from .rich_console import (
-    log_info, log_success, log_warning, log_error, log_step,
-    create_submission_summary, create_progress_bar, StepTracker,
-    console, get_colors
+    log_info, log_success, log_warning, log_error,
+    log_bundle, create_spinner_progress,
+    clear_live,
+    StepTracker,
+    print_banner,
+    console,
 )
+
+CONFIG_FILENAMES = {
+    "gradescope.yml", "gradescope.yaml", ".gradescope.yml", ".gradescope.yaml",
+}
+
+
+GRADESCOPE_SAML_URL = "https://www.gradescope.com.au/auth/saml/qut"
+LOGIN_TIMEOUT_MS = 300_000
 
 
 class SessionManager:
-    """Manages persistent browser sessions."""
-    
-    def __init__(self, fresh_login: bool = False):
-        # Cross-platform session directory
-        if os.name == 'nt':  # Windows
+    """Persistent Chromium profile — cookies survive across `gradescope submit` runs."""
+
+    def __init__(self):
+        if os.name == 'nt':
             self.session_dir = Path.home() / "AppData" / "Local" / "qut_gradescope"
-        else:  # Linux/Mac
-            self.session_dir = Path.home() / ".cache" / "qut_gradescope"
-        
-        self.fresh_login = fresh_login
-        
-        if fresh_login and self.session_dir.exists():
-            log_info("Using fresh login (clearing session)")
-            shutil.rmtree(self.session_dir)
-    
-    async def get_browser_context(self, headless: bool = True):
-        """Get browser context with persistent session."""
-        p = await async_playwright().start()
-        
-        if self.fresh_login:
-            # Use regular browser without persistence
-            log_info("🆕 Using fresh browser context (no persistence)")
-            browser = await p.chromium.launch(headless=headless)
-            context = await browser.new_context()
-            return context, p, browser
         else:
-            # Use persistent context
-            self.session_dir.mkdir(parents=True, exist_ok=True)
-            log_info(f"Using persistent session: {self.session_dir}")
-            
-            # Use persistent context for session management
-            context = await p.chromium.launch_persistent_context(
-                user_data_dir=str(self.session_dir),
-                headless=headless,
-                args=[
-                    '--disable-dev-shm-usage',
-                    '--no-sandbox'
-                ]
-            )
-            
-            # Log context info - persistent contexts don't have .browser
-            log_success("Persistent context created with user data directory")
-            return context, p, None
+            self.session_dir = Path.home() / ".cache" / "qut_gradescope"
+
+    def session_exists(self) -> bool:
+        return self.session_dir.exists() and any(self.session_dir.iterdir())
+
+    async def get_browser_context(self, headless: bool = True):
+        """Launch Chromium with a persistent user-data directory (saved cookies)."""
+        p = await async_playwright().start()
+        self.session_dir.mkdir(parents=True, exist_ok=True)
+        log_info(f"Session profile: {self.session_dir}")
+
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir=str(self.session_dir),
+            headless=headless,
+            args=['--disable-dev-shm-usage', '--no-sandbox'],
+        )
+        return context, p, None
     
 
     async def is_logged_in(self, context, page=None):
@@ -117,83 +108,93 @@ class SessionManager:
                 await page.close()
             return False, None
     
-    def cleanup_session(self):
-        """Manually clean up session data."""
+    def clear_session(self):
+        """Remove saved browser profile (cookies, local storage)."""
         if self.session_dir.exists():
             shutil.rmtree(self.session_dir)
-            log_success("Session data cleared")
+            log_success("Gradescope session cleared")
+
+    cleanup_session = clear_session
+
+
+async def wait_for_gradescope_login(page, steps: Optional[StepTracker] = None) -> None:
+    """Open QUT SSO and wait until the user finishes login (including 2FA)."""
+    log_info("Opening QUT SSO — complete login in the browser (including 2FA if prompted)...")
+    await page.goto(GRADESCOPE_SAML_URL)
+
+    log_warning("Waiting for you to finish login...")
+    try:
+        await page.wait_for_selector("a.courseBox", timeout=LOGIN_TIMEOUT_MS)
+    except Exception:
+        current_url = page.url
+        if "qut.edu.au" in current_url:
+            raise Exception(
+                "Login timed out or failed. Complete QUT SSO and 2FA in the browser, then try again."
+            ) from None
+        raise Exception("Login timed out before Gradescope dashboard loaded.") from None
+
+    if steps:
+        steps.complete_step("Login complete — session saved")
+    else:
+        log_success("Login complete — session saved for future submissions")
 
 
 class GradescopeSubmitter:
     """Main class for handling Gradescope submissions."""
-    
-    def __init__(self, username: str, password: str, headless: bool = False, fresh_login: bool = False, manual_login: bool = False):
-        self.username = username
-        self.password = password
+
+    def __init__(self, headless: bool = False):
         self.headless = headless
-        self.manual_login = manual_login
-        self.session_manager = SessionManager(fresh_login or manual_login)  # Manual login always uses fresh session
+        self.session_manager = SessionManager()
     
-    def create_zip(self, file_patterns: List[str], output_filename: str) -> None:
-        """Create a zip file from matching file patterns."""
-        EXCLUDE_FILES = {
-            "gradescope.py", 
-            "gradescope.json", 
-            "gradescope.yml", 
-            "gradescope.yaml",
-            ".gradescope.yml",
-            ".gradescope.yaml",
-            output_filename
-        }
-        
-        matched_files = []
+    def _candidate_paths(self) -> List[str]:
+        """Project files: from git when available, otherwise a directory walk."""
+        if Path(".git").exists():
+            result = subprocess.run(
+                ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                capture_output=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                return [p for p in result.stdout.decode().split("\0") if p]
+
+        paths = []
         for root, dirs, files in os.walk("."):
-            # Skip hidden directories and common ignore patterns
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules']]
-            
-            for file in files:
-                if file in EXCLUDE_FILES or file.startswith('.'):
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".") and d not in ("__pycache__", "node_modules", ".venv", "venv")
+            ]
+            for name in files:
+                if name.startswith("."):
                     continue
-                
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, ".")
-                
-                for pattern in file_patterns:
-                    if fnmatch(rel_path, pattern):
-                        matched_files.append((full_path, rel_path))
-                        break
-        
+                rel = os.path.relpath(os.path.join(root, name), ".")
+                paths.append(rel)
+        return paths
+
+    def create_zip(self, file_patterns: List[str], output_filename: str) -> None:
+        """Create a zip from paths matching include globs."""
+        skip = CONFIG_FILENAMES | {output_filename}
+
+        matched_files = []
+        for rel_path in self._candidate_paths():
+            if rel_path in skip or any(rel_path.endswith(f"/{s}") for s in skip):
+                continue
+            if not Path(rel_path).is_file():
+                continue  # git index can list deleted paths
+            if any(fnmatch(rel_path, pat) for pat in file_patterns):
+                matched_files.append((rel_path, rel_path))
+
         if not matched_files:
-            raise ValueError(f"❌ No files matched the patterns: {file_patterns}")
-        
-        with zipfile.ZipFile(output_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            with create_progress_bar("Creating submission bundle...") as progress:
-                task = progress.add_task("Bundling files", total=len(matched_files))
-                
-                for full_path, arcname in matched_files:
-                    zipf.write(full_path, arcname)
-                    from .rich_console import get_colors
-                    colors = get_colors()
-                    console.print(f"[dim]Added:[/dim] [{colors['primary']}]{arcname}[/{colors['primary']}]")
-                    progress.advance(task)
-        
-        # Get file size and display in KB if < 1 MB
-        file_size = os.path.getsize(output_filename)
-        size_mb = file_size / (1024 * 1024)
-        if size_mb < 1:
-            size_kb = file_size / 1024
-            size_str = f"{size_kb:.0f} KB"
-        else:
-            size_str = f"{size_mb:.1f} MB"
-        
-        log_success(f"Created: {output_filename} ({len(matched_files)} files, {size_str})")
-    
-    def print_submission_summary(self, course_label: str, assignment_label: str, file: str, grade: str = None) -> None:
-        """Print a formatted submission summary."""
-        console.print()  # Add spacing
-        panel = create_submission_summary(course_label, assignment_label, file, grade)
-        console.print(panel)
-    
+            raise ValueError(f"No files matched include patterns: {file_patterns}")
+
+        with zipfile.ZipFile(output_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for full_path, arcname in sorted(matched_files):
+                zipf.write(full_path, arcname)
+
+        size = os.path.getsize(output_filename)
+        size_str = f"{size / 1024:.0f} KB" if size < 1024 * 1024 else f"{size / (1024 * 1024):.1f} MB"
+        sample = [arc for _, arc in sorted(matched_files)]
+        log_bundle(output_filename, len(matched_files), size_str, sample)
+
     async def submit_to_gradescope(
         self, 
         course: str, 
@@ -204,161 +205,56 @@ class GradescopeSubmitter:
         """Submit a file to Gradescope."""
         # Initialize step tracker
         total_steps = 5 if notify_when_graded else 4
-        steps = StepTracker(total_steps, manual_completion=True)
-        
-        context, playwright, browser = await self.session_manager.get_browser_context(self.headless)
-        
-        # Create page first so we can reuse it
-        page = await context.new_page()
-        
-        # Step 1: Login/Session Check
-        steps.next_step("Checking login status...")
-        needs_login = True
-        current_url = None
-        if not self.session_manager.fresh_login:
-            # Always check session status - this loads any existing session data
-            is_logged_in, current_url = await self.session_manager.is_logged_in(context, page)
-            if is_logged_in:
-                steps.complete_step("Using existing session")
-                needs_login = False
-            else:
-                log_info("🔐 Logging in...")
-        else:
-            log_info("🔐 Fresh login requested")
-        
+        steps = StepTracker(total_steps)
         try:
-            # Set up error handling for minor network issues
-            page.on('pageerror', lambda error: None)  # Ignore page errors
-            page.on('requestfailed', lambda request: None)  # Ignore failed requests
-            
-            if self.manual_login:
-                # Manual login mode - let user login themselves
-                log_info("Opening QUT SSO page for manual login...")
-                await page.goto("https://www.gradescope.com.au/auth/saml/qut")
-                
-                log_warning("Please log in manually in the browser window...")
-                log_info("Waiting for you to complete login...")
-                
-                # Wait for login to complete by checking for course boxes
+            return await self._submit_flow(
+                steps, course, assignment, file, notify_when_graded, total_steps
+            )
+        except Exception:
+            steps.stop()
+            raise
+
+    async def _submit_flow(
+        self,
+        steps: StepTracker,
+        course: str,
+        assignment: str,
+        file: str,
+        notify_when_graded: bool,
+        total_steps: int,
+    ) -> Tuple[str, str]:
+        clear_live()
+        context, playwright, _browser = await self.session_manager.get_browser_context(self.headless)
+        clear_live()
+
+        page = await context.new_page()
+
+        steps.next_step("Checking saved session...")
+        page.on('pageerror', lambda _error: None)
+        page.on('requestfailed', lambda _request: None)
+
+        is_logged_in, _ = await self.session_manager.is_logged_in(context, page)
+
+        try:
+            if is_logged_in:
+                steps.complete_step("Using saved session")
                 try:
-                    await page.wait_for_selector("a.courseBox", timeout=300000)  # 5 minutes
-                    steps.complete_step("🔓 Manual login detected as complete!")
-                except:
-                    # Check if user is still on QUT login page (indicates failure)
-                    current_url = page.url
-                    if "qut.edu.au" in current_url and "auth" in current_url:
-                        log_error("❌ Manual QUT SSO Login Failed: Still on login page after timeout")
-                        raise Exception("❌ Manual QUT SSO login failed. Please check your credentials and try again.")
-                    else:
-                        raise Exception("❌ Manual login timed out or failed")
-                    
-            elif needs_login:
-                # Skip Gradescope homepage, go straight to QUT login
-                await page.goto("https://www.gradescope.com.au/auth/saml/qut")
-                
-                if "qut.edu.au" in page.url:
-                    log_info("QUT login detected. Entering credentials...")
-                    await page.wait_for_selector('input[name="username"]')
-                    await page.fill('input[name="username"]', self.username)
-                    await page.fill('input[name="password"]', self.password)
-                    
-                    # Try to click "Remember Me" checkbox if it exists
-                    try:
-                        remember_selectors = [
-                            'input[name="rememberMe"]',
-                            'input[name="remember-me"]', 
-                            'input[name="remember_me"]',
-                            'input[type="checkbox"][id*="remember"]',
-                            'input[type="checkbox"][id*="Remember"]',
-                            'input[type="checkbox"][name*="remember"]',
-                            'input[type="checkbox"][value*="remember"]'
-                        ]
-                        
-                        for selector in remember_selectors:
-                            try:
-                                if await page.locator(selector).is_visible(timeout=2000):
-                                    await page.check(selector)
-                                    log_success("✅ Remember Me enabled")
-                                    break
-                            except:
-                                continue
-                    except:
-                        pass  # Silent fail for Remember Me
-                    
-                    await page.click('button#kc-login')
-                    
-                    # Wait for either success (course boxes) or failure indicators
-                    try:
-                        # Wait for success indicator (course boxes) with timeout
-                        await page.wait_for_selector("a.courseBox", timeout=10000)
-                        steps.complete_step("🔓 QUT login complete")
-                    except:
-                        # Check for login failure indicators
-                        await page.wait_for_timeout(2000)  # Give page time to load error messages
-                        
-                        # Check for common error messages
-                        error_indicators = [
-                            'Invalid username or password',
-                            'Invalid credentials',
-                            'Authentication failed',
-                            'Login failed',
-                            'Access denied',
-                            'Invalid username',
-                            'Invalid password',
-                            'Wrong username or password',
-                            'Authentication error',
-                            'Login error',
-                            'Failed to authenticate',
-                            'Invalid login',
-                            'Username or password incorrect',
-                            'Authentication unsuccessful'
-                        ]
-                        
-                        page_content = await page.content()
-                        current_url = page.url
-                        
-                        # Check if we're still on QUT login page (indicates failure)
-                        if "qut.edu.au" in current_url and "auth" in current_url:
-                            # Look for error messages in the page
-                            error_found = False
-                            for error_text in error_indicators:
-                                if error_text.lower() in page_content.lower():
-                                    log_error(f"❌ QUT SSO Login Failed: {error_text}")
-                                    error_found = True
-                                    break
-                            
-                            if not error_found:
-                                log_error("❌ QUT SSO Login Failed: Invalid credentials or authentication error")
-                            
-                            raise Exception("❌ QUT SSO login failed. Please check your username and password.")
-                        else:
-                            # If we're not on QUT page anymore, login might have succeeded
-                            # Try to find course boxes or other success indicators
-                            try:
-                                await page.wait_for_selector("a.courseBox", timeout=5000)
-                                steps.complete_step("🔓 QUT login complete")
-                            except:
-                                log_error("❌ QUT SSO Login Failed: Unable to reach Gradescope after login")
-                                raise Exception("❌ QUT SSO login failed. Unable to reach Gradescope after authentication.")
-            else:
-                if current_url and "gradescope.com.au" in current_url:
-                    log_info(f"Already on Gradescope from session check")
-                    # We're already on the right page, just wait for course boxes
-                    try:
-                        await page.wait_for_selector("a.courseBox", timeout=5000)
-                    except:
-                        # If course boxes aren't ready, we might need to refresh
-                        log_info("Refreshing page to ensure it's ready...")
-                        await page.reload()
-                        await page.wait_for_selector("a.courseBox")
-                else:
-                    log_info("Navigating to Gradescope (already logged in)...")
-                    await page.goto("https://www.gradescope.com.au")
+                    await page.wait_for_selector("a.courseBox", timeout=5000)
+                except Exception:
+                    log_info("Refreshing Gradescope dashboard...")
+                    await page.reload()
                     await page.wait_for_selector("a.courseBox")
+            elif self.headless:
+                raise Exception(
+                    "No saved Gradescope session. Run `gradescope login` once "
+                    "(opens a browser for QUT SSO and 2FA), then run `gradescope submit` again."
+                )
+            else:
+                log_info("Browser login required — complete SSO in the window.")
+                await wait_for_gradescope_login(page, steps)
             
             # Step 2: Find Course
-            colors = get_colors()
-            steps.next_step(f"Finding course [{colors['primary']}]'{course}'[/{colors['primary']}]...")
+            steps.next_step(f"Finding course '{course}'...")
             courses = await page.query_selector_all("a.courseBox")
             course_label = ""
             
@@ -380,7 +276,7 @@ class GradescopeSubmitter:
                 raise Exception(f"❌ Could not find course matching '{course}'")
             
             # Step 3: Find Assignment
-            steps.next_step(f"Finding assignment [{colors['primary']}]'{assignment}'[/{colors['primary']}]...")
+            steps.next_step(f"Finding assignment '{assignment}'...")
             assignment_label = ""
             
             # Try finding assignment links first
@@ -495,24 +391,26 @@ class GradescopeSubmitter:
                 raise Exception("❌ Could not locate a submission button.")
             
             await page.wait_for_timeout(3000)
-            steps.complete("File submitted successfully!")
-            
-            # Capture submission URL for headless mode
+            steps.complete_step("File submitted successfully!")
+
             submission_url = page.url
             if self.headless:
-                log_info(f"📎 Submission URL: {submission_url}")
-            
-            self.print_submission_summary(course_label, assignment_label, file)
-            
+                log_info(f"Submission URL: {submission_url}")
+
+            grade_text = None
             if notify_when_graded:
-                await self._wait_for_grade(page)
-            
+                steps.next_step("Waiting for autograder...")
+                grade_text = await self._wait_for_grade(page)
+                if grade_text:
+                    console.print()
+                    log_success(f"Grade: {grade_text}")
+
             if not self.headless:
                 log_info("Leaving the browser open. Press Enter to exit.")
                 await asyncio.get_event_loop().run_in_executor(None, input)
-            
+
             return course_label, assignment_label
-            
+
         except Exception as e:
             # Handle browser closure gracefully
             if "Target page, context or browser has been closed" in str(e):
@@ -529,64 +427,39 @@ class GradescopeSubmitter:
             
         finally:
             try:
-                if browser:  # Regular browser (fresh login)
-                    if not browser.is_connected():
-                        pass  # Browser already closed
-                    else:
-                        await browser.close()
-                else:  # Persistent context
-                    if not context.pages:  # No pages means context might be closed
-                        pass  # Context likely already closed
-                    else:
-                        await context.close()
-            except Exception as e:
-                # Ignore errors when browser/context is already closed
-                if "Target page, context or browser has been closed" not in str(e):
-                    pass  # Only ignore the specific "already closed" error
-            finally:
-                try:
-                    await playwright.stop()
-                except Exception:
-                    # Ignore playwright stop errors
-                    pass
+                await context.close()
+            except Exception:
+                pass
+            try:
+                await playwright.stop()
+            except Exception:
+                pass
     
-    async def _wait_for_grade(self, page) -> None:
-        """Wait for and display the grade when available."""
-        from .rich_console import create_spinner_progress
-        
-        log_info("Waiting for grade to appear...")
+    async def _wait_for_grade(self, page) -> Optional[str]:
+        """Wait for grade; return score text or None."""
         grade_selector = "div.submissionOutlineHeader--totalPoints"
         max_attempts = 48  # 4 minutes @ 5s interval
-        start_time = time.time()
-        
+        grade_text = None
+
         try:
-            with create_spinner_progress("Waiting for grade...") as progress:
+            with create_spinner_progress() as progress:
                 task = progress.add_task("Checking grade", total=None)
-                
-                for i in range(max_attempts):
+
+                for _ in range(max_attempts):
                     await page.reload()
                     grade_el = await page.query_selector(grade_selector)
-                    
-                    elapsed = int(time.time() - start_time)
-                    mins, secs = divmod(elapsed, 60)
-                    timer_display = f"{mins:02d}:{secs:02d}"
-                    
-                    # Update progress with timer
-                    progress.update(task, description=f"Checking grade ({timer_display})")
-                    
+
                     if grade_el:
-                        grade_text = (await grade_el.inner_text()).strip()
-                        if grade_text and not grade_text.startswith("-"):
-                            progress.stop()
-                            from .rich_console import get_colors
-                            colors = get_colors()
-                            log_success(f"Grade returned after {timer_display}: [bold {colors['success']}]{grade_text}[/bold {colors['success']}]")
+                        text = (await grade_el.inner_text()).strip()
+                        if text and not text.startswith("-"):
+                            grade_text = text
                             break
-                    
+
                     await asyncio.sleep(5)
                 else:
-                    progress.stop()
-                    log_warning(f"Timed out after {max_attempts * 5} seconds with no grade available.")
+                    log_warning(
+                        f"No grade after {max_attempts * 5}s — check Gradescope in the browser."
+                    )
         except Exception as e:
             if "Target page, context or browser has been closed" in str(e):
                 log_error("Browser was closed while waiting for grade")
@@ -597,3 +470,29 @@ class GradescopeSubmitter:
             else:
                 log_warning(f"Grade monitoring stopped due to: {e}")
                 log_info("Submission was successful, check Gradescope manually for grade")
+
+        return grade_text
+
+
+async def interactive_login(clear_first: bool = False) -> None:
+    """Open a browser so the user can log in; cookies are stored for later submits."""
+    print_banner("login")
+    session_manager = SessionManager()
+    if clear_first:
+        session_manager.clear_session()
+
+    context, playwright, _browser = await session_manager.get_browser_context(headless=False)
+    page = await context.new_page()
+    try:
+        await wait_for_gradescope_login(page)
+        log_info("Session saved. Press Enter to close the browser.")
+        await asyncio.get_event_loop().run_in_executor(None, input)
+    finally:
+        try:
+            await context.close()
+        except Exception:
+            pass
+        try:
+            await playwright.stop()
+        except Exception:
+            pass

@@ -51,7 +51,8 @@ gradescope.yml
 *.zip
 test-*.yml
 debug_*.py
-test_*.py
+/test_*.py
+tests/.pytest_work/
 
 # Playwright
 playwright-report/
@@ -61,3 +62,5 @@ test-results/
 .specstory/
 
 .cursorindexingignore
+.cursor/
+AGENTS.md

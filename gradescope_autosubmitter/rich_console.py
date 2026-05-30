@@ -1,417 +1,345 @@
-"""Rich console utilities for enhanced CLI output."""
+"""Rich helpers — orange-themed CLI output without a heavy TUI."""
 
+from __future__ import annotations
+
+from typing import List, Optional
+
+import click
+from rich import box
+from rich.align import Align
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
+from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
-from rich.live import Live
-from rich.layout import Layout
-from rich.prompt import Prompt
-from rich import box
-from datetime import datetime
-import time
+from rich.theme import Theme
+from rich.markup import escape
 
-# Global console instance
-console = Console()
+COLORS = {
+    "primary": "dark_orange",
+    "accent": "orange1",
+    "success": "green",
+    "warning": "yellow",
+    "error": "red",
+    "muted": "dim",
+}
 
-# UI Configuration support
-_ui_config = None
+console = Console(
+    theme=Theme(
+        {
+            "info": COLORS["primary"],
+            "success": COLORS["success"],
+            "warning": COLORS["warning"],
+            "error": COLORS["error"],
+        }
+    )
+)
 
-def get_ui_config():
-    """Get current UI configuration, loading it if needed."""
-    global _ui_config
-    if _ui_config is None:
-        try:
-            from .ui_config import load_ui_config
-            _ui_config = load_ui_config()
-        except ImportError:
-            # Fallback to default config if ui_config module is not available
-            _ui_config = {
-                "log_timestamps": True,
-                "colors": {
-                    "primary": "cyan",
-                    "success": "green",
-                    "warning": "yellow", 
-                    "error": "red"
-                },
-                "animations": True,
-                "compact_mode": False,
-                "show_step_timings": True,
-                "grade_wait_display": "timer"
-            }
-    return _ui_config
-
-def reload_ui_config():
-    """Reload UI configuration from file."""
-    global _ui_config
-    _ui_config = None
-    return get_ui_config()
 
 def get_colors():
-    """Get the current color configuration as a convenient dict."""
-    config = get_ui_config()
-    return config['colors']
+    return COLORS
 
-def timestamp() -> str:
-    """Generate a timestamp string."""
-    return datetime.now().strftime("%H:%M:%S.%f")[:-2]
 
-def log_info(message: str, prefix: str = "INFO") -> None:
-    """Log an info message with Rich formatting."""
-    config = get_ui_config()
-    color = config['colors']['primary']
-    timestamp_str = f"[{color}]\\[{timestamp()}][/{color}] " if config['log_timestamps'] else ""
-    console.print(f"{timestamp_str}[{color}]{prefix}[/{color}] {message}")
+def clear_live() -> None:
+    """Clear any Rich live/progress row so plain log lines don't get overwritten."""
+    while True:
+        try:
+            console.clear_live()
+        except IndexError:
+            break
 
-def log_success(message: str, prefix: str = "✓") -> None:
-    """Log a success message with Rich formatting."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    timestamp_str = f"[{primary_color}]\\[{timestamp()}][/{primary_color}] " if config['log_timestamps'] else ""
-    color = config['colors']['success']
-    console.print(f"{timestamp_str}[{color}]{prefix}[/{color}] {message}")
 
-def log_warning(message: str, prefix: str = "WARN") -> None:
-    """Log a warning message with Rich formatting."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    timestamp_str = f"[{primary_color}]\\[{timestamp()}][/{primary_color}] " if config['log_timestamps'] else ""
-    color = config['colors']['warning']
-    console.print(f"{timestamp_str}[{color}]{prefix}[/{color}] {message}")
+def _style(text: str, color: str) -> str:
+    return f"[{color}]{escape(text)}[/{color}]"
 
-def log_error(message: str, prefix: str = "ERROR") -> None:
-    """Log an error message with Rich formatting."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    timestamp_str = f"[{primary_color}]\\[{timestamp()}][/{primary_color}] " if config['log_timestamps'] else ""
-    color = config['colors']['error']
-    console.print(f"{timestamp_str}[{color}]{prefix}[/{color}] {message}")
 
-def log_step(step: int, total: int, message: str, status: str = "in_progress") -> None:
-    """Log a step in a multi-step process."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    if status == "complete":
-        icon = "✓"
-        color = config['colors']['success']
-    elif status == "in_progress":
-        icon = ">"
-        color = config['colors']['primary']
-    else:
-        icon = "..."
-        color = config['colors']['warning']
-    
-    console.print(f"[{primary_color}]\\[{timestamp()}][/{primary_color}] [{color}]{icon}[/{color}] [bold][{step}/{total}][/bold] {message}")
+def print_cli_header() -> None:
+    """Compact centered title for --help and --version."""
+    p, a = COLORS["primary"], COLORS["accent"]
+    line = Text()
+    line.append("gradescope", style=f"bold {p}")
+    line.append(" · ", style=COLORS["muted"])
+    line.append("QUT Gradescope Auto Submitter", style=f"bold {a}")
+    console.print()
+    console.print(Align.center(line))
 
-def create_submission_summary(course: str, assignment: str, file: str, grade: str = None) -> Panel:
-    """Create a formatted submission summary panel."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    success_color = config['colors']['success']
-    
-    content = f"""Course: [{primary_color}]{course}[/{primary_color}]
-Assignment: [{primary_color}]{assignment}[/{primary_color}]
-File: [{primary_color}]{file}[/{primary_color}]"""
-    
-    if grade:
-        content += f"\nGrade: [bold {success_color}]{grade}[/bold {success_color}]"
-    
+
+def print_version(version: str) -> None:
+    """Styled --version output."""
+    import sys
+
+    print_cli_header()
+    console.print(Align.center(Text(f"v{version.lstrip('v')}", style=f"bold {COLORS['accent']}")))
+    console.print(
+        Align.center(Text(f"Python {sys.version.split()[0]}", style=COLORS["muted"]))
+    )
+    console.print(
+        Align.center(
+            Text("https://pypi.org/project/qut-gradescope-autosubmitter/", style="dim underline")
+        )
+    )
+    console.print()
+
+
+def print_root_help(ctx: click.Context) -> None:
+    """Main `gradescope --help` / bare `gradescope`."""
+    p, a, m = COLORS["primary"], COLORS["accent"], COLORS["muted"]
+    print_cli_header()
+    console.print(
+        Align.center(
+            Text(
+                "Bundle, upload, and poll Gradescope — log in once with the browser.",
+                style=m,
+            )
+        )
+    )
+    console.print()
+    console.print(Rule(style=p))
+
+    table = Table(
+        box=box.SIMPLE,
+        show_header=True,
+        header_style=f"bold {p}",
+        border_style=p,
+        padding=(0, 1),
+    )
+    table.add_column("Command", style=f"bold {a}", no_wrap=True)
+    table.add_column("What it does")
+
+    for name in sorted(ctx.command.commands):
+        cmd = ctx.command.commands[name]
+        table.add_row(name, escape(cmd.get_short_help_str() or ""))
+
+    console.print(table)
+    console.print()
+    console.print(
+        f"[{m}]Typical flow:[/]  "
+        f"[{a}]init[/] → [{a}]login[/] → [{a}]submit[/]  "
+        f"[{m}]·[/]  [{m}]Details:[/] [{p}]gradescope <cmd> --help[/]  "
+        f"[{m}]·[/]  [{m}]Version:[/] [{p}]--version[/]"
+    )
+    console.print(Rule(style=p))
+    console.print()
+
+
+def _option_default_suffix(opt: click.Option) -> str:
+    """Human-readable default for help — hide Click's internal Sentinel.UNSET."""
+    if opt.is_flag:
+        return ""
+    default = opt.default
+    if default is None or str(default) == "Sentinel.UNSET" or default == ():
+        return ""
+    return f" [dim](default: {default})[/]"
+
+
+def print_command_help(ctx: click.Context) -> None:
+    """Per-command `gradescope <cmd> --help`."""
+    p, a, m = COLORS["primary"], COLORS["accent"], COLORS["muted"]
+    cmd = ctx.command
+    name = ctx.info_name or cmd.name
+
+    console.print()
+    console.print(f"[bold {p}]gradescope[/] [bold {a}]{escape(name)}[/]")
+    if cmd.help:
+        console.print(f"  [{m}]{escape(cmd.help)}[/]")
+    console.print()
+
+    opts = [
+        param
+        for param in cmd.get_params(ctx)
+        if isinstance(param, click.Option) and param.name != "help"
+    ]
+    if opts:
+        table = Table(
+            box=box.SIMPLE,
+            show_header=True,
+            header_style=f"bold {p}",
+            border_style=p,
+        )
+        table.add_column("Option", style=a, no_wrap=True)
+        table.add_column("Description")
+        for opt in opts:
+            opts_str = ", ".join(opt.opts)
+            if opt.is_flag:
+                opts_str = opts_str or f"--{opt.name}"
+            table.add_row(opts_str, escape(opt.help or "") + _option_default_suffix(opt))
+        console.print(table)
+        console.print()
+
+    console.print(f"[{m}]Run from your assignment repo (needs gradescope.yml).[/]")
+    console.print()
+
+
+def print_banner(subtitle: str = "submit") -> None:
+    """One-line command header."""
+    p, a = COLORS["primary"], COLORS["accent"]
+    console.print(f"[bold {p}]gradescope[/] [dim]·[/] [bold {a}]{escape(subtitle)}[/]")
+
+
+def log_info(message: str) -> None:
+    console.print(f"{_style('·', COLORS['primary'])} {escape(message)}")
+
+
+def log_success(message: str) -> None:
+    console.print(f"{_style('✓', COLORS['success'])} {escape(message)}")
+
+
+def log_warning(message: str) -> None:
+    console.print(f"{_style('!', COLORS['warning'])} {escape(message)}")
+
+
+def log_error(message: str) -> None:
+    console.print(f"{_style('✗', COLORS['error'])} {escape(message)}")
+
+
+def create_hook_panel(hook_path: str, command: str) -> Panel:
     return Panel(
-        content,
-        title="Submission Summary",
-        border_style=primary_color,
-        box=box.ROUNDED
+        f"[bold]Hook[/bold]     {escape(hook_path)}\n"
+        f"[bold]Command[/bold]  {escape(command)}",
+        title="[bold]Git hook installed[/bold]",
+        border_style=COLORS["primary"],
+        box=box.ROUNDED,
+        padding=(0, 1),
     )
 
-def create_credential_status_table(username: str = None, password: str = None, 
-                                 env_path: str = None) -> Table:
-    """Create a table showing credential status."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    success_color = config['colors']['success']
-    
-    table = Table(title="Credential Status", box=box.ROUNDED)
-    table.add_column("Item", style=primary_color, no_wrap=True)
-    table.add_column("Status", style="magenta")
-    table.add_column("Details", style=success_color)
-    
-    # Username status
-    if username:
-        table.add_row("Username", "✅ Set", username)
-    else:
-        table.add_row("Username", "❌ Missing", "Not configured")
-    
-    # Password status
-    if password:
-        masked = "•" * min(len(password), 12)
-        table.add_row("Password", "✅ Set", masked)
-    else:
-        table.add_row("Password", "❌ Missing", "Not configured")
-    
-    # Storage location
-    if env_path:
-        table.add_row("Storage", "📁 .env file", env_path)
-    else:
-        table.add_row("Storage", "🌍 Environment", "Session variables")
-    
-    return table
+
+def print_hint(steps: List[str]) -> None:
+    """Numbered next-steps panel (init, errors)."""
+    body = "\n".join(
+        f"[{COLORS['primary']}]{i}.[/] [{COLORS['accent']}]{escape(s)}[/]"
+        for i, s in enumerate(steps, 1)
+    )
+    console.print(
+        Panel(
+            body,
+            title="[bold]Next steps[/bold]",
+            border_style=COLORS["primary"],
+            box=box.ROUNDED,
+            padding=(0, 1),
+        )
+    )
+
+
+def log_bundle(
+    filename: str, file_count: int, size_str: str, sample_files: Optional[List[str]] = None
+) -> None:
+    """Compact bundle line (no panel, no second line that can collide with live UI)."""
+    p = COLORS["primary"]
+    detail = f"{file_count} files, {escape(size_str)}"
+    if sample_files:
+        preview = sample_files[:4]
+        extra = len(sample_files) - len(preview)
+        names = ", ".join(preview)
+        if extra > 0:
+            names += f" (+{extra} more)"
+        detail += f" — {escape(names)}"
+    console.print(
+        f"{_style('✓', COLORS['success'])} "
+        f"Created [{p}]{escape(filename)}[/] ({detail})"
+    )
+
+
+def create_config_panel(rows: List[tuple]) -> Panel:
+    """Key/value panel for validate."""
+    table = Table(show_header=False, box=None, padding=(0, 1))
+    table.add_column("Key", style=f"bold {COLORS['primary']}", width=12)
+    table.add_column("Value")
+    for key, value in rows:
+        table.add_row(key, escape(str(value)))
+    return Panel(
+        table,
+        title="[bold]Configuration[/bold]",
+        border_style=COLORS["primary"],
+        box=box.ROUNDED,
+    )
+
 
 def create_doctor_table(checks: list) -> Table:
-    """Create a system diagnostics table."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    
-    table = Table(title="System Diagnostics", box=box.ROUNDED)
-    table.add_column("Component", style=primary_color, no_wrap=True)
-    table.add_column("Status", style="magenta", width=12)
-    table.add_column("Details", style="dim")
-    
+    p = COLORS["primary"]
+    table = Table(
+        title="[bold]Health check[/bold]",
+        title_style=p,
+        box=box.ROUNDED,
+        border_style=p,
+        header_style=f"bold {p}",
+    )
+    table.add_column("Component", style=p)
+    table.add_column("Status", justify="center")
+    table.add_column("Details", style=COLORS["muted"])
+
+    icons = {"ok": "✓", "error": "✗", "warning": "!"}
     for check in checks:
-        # Use consistent single-character status indicators
-        success_color = config['colors']['success']
-        error_color = config['colors']['error']
-        warning_color = config['colors']['warning']
-        
-        if check["status"] == "ok":
-            status_text = "✅ Ok"
-            status_color = success_color
-        elif check["status"] == "error":
-            status_text = "❌ Error"
-            status_color = error_color
-        else:  # warning
-            status_text = "⚠  Warning"  # Use single warning symbol + space for alignment
-            status_color = warning_color
-        
+        icon = icons.get(check["status"], "?")
+        color = COLORS.get(check["status"], "white")
+        if check["status"] == "warning":
+            color = COLORS["warning"]
         table.add_row(
             check["component"],
-            f"[{status_color}]{status_text}[/{status_color}]",
-            check["details"]
+            f"[{color} bold]{icon}[/]",
+            escape(str(check["details"])),
         )
-    
     return table
 
+
 def create_progress_bar(description: str = "Processing...") -> Progress:
-    """Create a progress bar for operations."""
     return Progress(
-        SpinnerColumn(),
+        SpinnerColumn(style=COLORS["primary"]),
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
+        BarColumn(bar_width=32, style=COLORS["muted"], complete_style=COLORS["accent"]),
         TaskProgressColumn(),
-        TimeRemainingColumn(),
-        console=console
+        TimeElapsedColumn(),
+        console=console,
     )
 
-def create_spinner_progress(description: str = "Working...") -> Progress:
-    """Create a spinner for indeterminate operations."""
+
+def create_spinner_progress() -> Progress:
+    """Grade wait spinner — one elapsed timer (TimeElapsedColumn only)."""
+    clear_live()
     return Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console
+        SpinnerColumn(style=COLORS["primary"]),
+        TextColumn("[bold]{task.description}[/]"),
+        BarColumn(
+            bar_width=20,
+            style=COLORS["muted"],
+            pulse_style=COLORS["accent"],
+        ),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
     )
+
 
 class StepTracker:
-    """Track progress through multi-step operations."""
-    
-    def __init__(self, total_steps: int, manual_completion: bool = False):
+    """Lightweight step labels — no live progress bar."""
+
+    def __init__(self, total_steps: int):
         self.total_steps = total_steps
         self.current_step = 0
-        self.start_time = time.time()
-        self.step_times = []
-        self.manual_completion = manual_completion
-        self.step_completed = False
-    
-    def next_step(self, description: str, status: str = "in_progress"):
-        """Move to the next step."""
-        config = get_ui_config()
-        
-        # Only auto-complete previous step if not using manual completion
-        if self.current_step > 0 and not self.manual_completion:
-            # Mark previous step as complete
-            step_time = time.time() - self.step_start_time
-            self.step_times.append(step_time)
-            color = config['colors']['success']
-            primary_color = config['colors']['primary']
-            console.print(f"[{color}]✓[/{color}] [{primary_color}][{self.current_step}/{self.total_steps}][/{primary_color}] {self.current_description}")
-            if config['show_step_timings']:
-                console.print(f"[dim]    → Completed in {step_time:.1f}s[/dim]")
-        
+
+    def next_step(self, description: str) -> None:
         self.current_step += 1
-        self.current_description = description
-        self.step_start_time = time.time()
-        self.step_completed = False
-        
-        if self.current_step <= self.total_steps:
-            color = config['colors']['primary']
-            primary_color = config['colors']['primary']
-            console.print(f"[{color}]>[/{color}] [{primary_color}][{self.current_step}/{self.total_steps}][/{primary_color}] {description}")
-    
-    def complete_step(self, success_message: str = None):
-        """Mark the current step as complete with optional success message."""
-        if self.current_step > 0 and self.current_step <= self.total_steps and not self.step_completed:
-            config = get_ui_config()
-            step_time = time.time() - self.step_start_time
-            self.step_times.append(step_time)
-            success_color = config['colors']['success']
-            primary_color = config['colors']['primary']
-            
-            # In manual completion mode, don't show the step completion line
-            # The success message with timestamp is enough
-            if not self.manual_completion:
-                # Show step completion
-                console.print(f"[{success_color}]✓[/{success_color}] [{primary_color}][{self.current_step}/{self.total_steps}][/{primary_color}] {self.current_description}")
-            
-            # Show success message with timestamp if provided
-            if success_message:
-                log_success(success_message)
-            
-            if config['show_step_timings']:
-                console.print(f"[dim]    → Completed in {step_time:.1f}s[/dim]")
-            
-            self.step_completed = True
+        clear_live()
+        p = COLORS["primary"]
+        console.print(
+            f"[{p}]›[/] [{self.current_step}/{self.total_steps}] {escape(description)}",
+            soft_wrap=True,
+        )
 
-    def complete(self, final_message: str = None):
-        """Mark the entire process as complete."""
-        config = get_ui_config()
-        
-        if self.current_step > 0 and self.current_step <= self.total_steps:
-            step_time = time.time() - self.step_start_time
-            self.step_times.append(step_time)
-            success_color = config['colors']['success']
-            primary_color = config['colors']['primary']
-            console.print(f"[{success_color}]✓[/{success_color}] [{primary_color}][{self.current_step}/{self.total_steps}][/{primary_color}] {self.current_description}")
-            if config['show_step_timings']:
-                console.print(f"[dim]    → Completed in {step_time:.1f}s[/dim]")
-        
-        total_time = time.time() - self.start_time
-        if final_message:
-            log_success(f"{final_message} [dim](Total: {total_time:.1f}s)[/dim]")
-        else:
-            log_success(f"All steps completed [dim](Total: {total_time:.1f}s)[/dim]")
+    def complete_step(self, message: str = None) -> None:
+        if message:
+            log_success(message)
 
-def create_credentials_interface(username: str = None, password: str = None, env_path: str = None) -> Panel:
-    """Create a compact credentials interface panel."""
-    
-    # Status indicators
-    user_status = "✅" if username else "❌"
-    pass_status = "✅" if password else "❌"
-    storage_info = "📁 .env" if env_path else "🌍 env vars" if (username or password) else "❌ none"
-    
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    content = f"""[bold {primary_color}]Credentials[/bold {primary_color}]  {user_status} User  {pass_status} Pass  {storage_info}
+    def complete(self, message: str = None) -> None:
+        if message:
+            log_success(message)
 
-[bold]Options:[/bold]
-[{primary_color}]1[/{primary_color}] Manage .env credentials    [{primary_color}]2[/{primary_color}] Environment variables    [{primary_color}]3[/{primary_color}] Exit"""
-
-    return Panel(
-        content,
-        border_style=primary_color,
-        box=box.ROUNDED,
-        padding=(0, 1)
-    )
-
-def create_submenu_panel(title: str, options: list, back_option: str = "Back") -> Panel:
-    """Create a compact submenu panel."""
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    warning_color = config['colors']['warning']
-    
-    content = f"[bold]{title}[/bold]\n\n"
-    
-    for i, option in enumerate(options, 1):
-        content += f"[{primary_color}][{i}][/{primary_color}] {option}\n"
-    
-    if back_option:
-        content += f"[{primary_color}][{len(options) + 1}][/{primary_color}] {back_option}"
-    
-    return Panel(
-        content,
-        border_style=primary_color, 
-        box=box.ROUNDED,
-        padding=(0, 1)
-    )
-
-def create_ui_config_panel(config: dict) -> Panel:
-    """Create a panel showing current UI configuration."""
-    
-    primary_color = config['colors']['primary']
-    success_color = config['colors']['success']
-    warning_color = config['colors']['warning']
-    error_color = config['colors']['error']
-
-    # Map rich color codes back to friendly names when possible
-    def _friendly_color_name(code: str) -> str:
-        try:
-            from .ui_config import get_available_colors
-            mapping = get_available_colors()
-            for friendly, rich_code in mapping.items():
-                if rich_code == code:
-                    return friendly
-        except Exception:
-            pass
-        return code
-
-    primary_name = _friendly_color_name(primary_color)
-    success_name = _friendly_color_name(success_color)
-    warning_name = _friendly_color_name(warning_color)
-    error_name = _friendly_color_name(error_color)
-    
-    content = f"""[bold]Settings:[/bold]
-[{primary_color}]•[/{primary_color}] Timestamps: {'[' + success_color + ']On[/' + success_color + ']' if config['log_timestamps'] else '[' + error_color + ']Off[/' + error_color + ']'}
-[{primary_color}]•[/{primary_color}] Animations: {'[' + success_color + ']On[/' + success_color + ']' if config['animations'] else '[' + error_color + ']Off[/' + error_color + ']'}  
-[{primary_color}]•[/{primary_color}] Compact Mode: {'[' + success_color + ']On[/' + success_color + ']' if config['compact_mode'] else '[' + error_color + ']Off[/' + error_color + ']'}
-[{primary_color}]•[/{primary_color}] Step Timings: {'[' + success_color + ']On[/' + success_color + ']' if config['show_step_timings'] else '[' + error_color + ']Off[/' + error_color + ']'}
-[{primary_color}]•[/{primary_color}] Grade Display: [{warning_color}]{config['grade_wait_display']}[/{warning_color}]
-
-[bold]Current Colors:[/bold]
-[{primary_color}]•[/{primary_color}] Primary: [{primary_color}]■[/{primary_color}] {primary_name}
-[{primary_color}]•[/{primary_color}] Success: [{success_color}]■[/{success_color}] {success_name}  
-[{primary_color}]•[/{primary_color}] Warning: [{warning_color}]■[/{warning_color}] {warning_name}
-[{primary_color}]•[/{primary_color}] Error: [{error_color}]■[/{error_color}] {error_name}"""
-    
-    return Panel(
-        content,
-        title="UI Configuration",
-        border_style=primary_color,
-        box=box.ROUNDED
-    )
-
-def create_spinner_progress(description: str = "Working..."):
-    """Create a spinner progress with blinking text for grade monitoring."""
-    from rich.progress import Progress, SpinnerColumn, TextColumn
-    from rich.text import Text
-    
-    config = get_ui_config()
-    primary_color = config['colors']['primary']
-    
-    # Custom text column that supports blinking
-    class BlinkingTextColumn(TextColumn):
-        def __init__(self, text_format: str = "[progress.description]{task.description}"):
-            super().__init__(text_format)
-            self.blink_state = False
-            self.last_blink = time.time()
-        
-        def render(self, task):
-            # Blink every 0.8 seconds
-            current_time = time.time()
-            blink_interval = get_ui_config().get("grade_blink_interval", 1.2)
-            if current_time - self.last_blink > blink_interval:
-                self.blink_state = not self.blink_state
-                self.last_blink = current_time
-            
-            # Apply blinking by switching between normal and dim
-            if self.blink_state:
-                text_style = f"bold {primary_color}"
-            else:
-                text_style = f"dim {primary_color}"
-            
-            text = Text(task.description, style=text_style)
-            return text
-    
-    return Progress(
-        SpinnerColumn(style=primary_color),
-        BlinkingTextColumn(),
-        console=console,
-        transient=False
-    )
+    def stop(self) -> None:
+        pass

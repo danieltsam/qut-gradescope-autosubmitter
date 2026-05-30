@@ -1,129 +1,139 @@
-<div align="center">
+<h1 align="center">QUT Gradescope Auto Submitter</h1>
 
-# QUT Gradescope Auto Submitter
-
-One command to submit assignments to Gradescope. No more repetitive clicking.
-</div>
-
-
----
-
-https://github.com/user-attachments/assets/42f96ca3-e640-4c72-8ba7-c43932be0d79
-
----
-
-## Why This Exists
+<p align="center">
+  <a href="https://pypi.org/project/qut-gradescope-autosubmitter/"><img src="https://img.shields.io/pypi/v/qut-gradescope-autosubmitter?label=PyPI" alt="PyPI"></a>
+</p>
 
 As a QUT student, I was tired of:
+
 - Clicking through Gradescope 50+ times per assignment when trying to see if I met test cases
 - Being forced to wait when I'm trying to get quick feedback on my work
 - Losing focus context switching between code editor and browser
 - Manual file compression, uploads and form submissions
 
-This tool automates the entire submission process so you can focus on coding, not clicking.
+This tool automates the submission process so you can focus on coding, not clicking.
 
-## ⚡ Quick Start
+https://github.com/user-attachments/assets/42f96ca3-e640-4c72-8ba7-c43932be0d79
+
+## Install
+
+**PyPI:**
 
 ```bash
-# Install
-pip install qut-gradescope-autosubmitter && playwright install chromium
+pip install qut-gradescope-autosubmitter
+playwright install chromium
 ```
+
+**pipx** (isolated CLI, no project venv):
+
 ```bash
-# One-time setup
-gradescope init        # Create config file
-gradescope credentials # Save QUT login
-
-# Daily usage
-gradescope submit      # Submit current assignment
+pipx install qut-gradescope-autosubmitter
+playwright install chromium
 ```
 
-That's it. No more manual submissions.
+**From source:**
 
-*Or use it with your existing repository as a [Github Action](https://github.com/marketplace/actions/qut-gradescope-autosubmission)* 😊
+```bash
+git clone https://github.com/danieltsam/qut-gradescope-autosubmitter.git
+cd qut-gradescope-autosubmitter
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+playwright install chromium
+```
 
-> To access the gradescope command in any directory on your machine, you may have to add the tool to your PATH. The installation places the 'gradescope' command in your user's local bin directory.
+After any install, run `gradescope doctor` if something looks off.
 
-> **QUT 2FA requirement**
-> QUT now enforces 2FA on first login. On your **first** use, `gradescope` will open a browser and you’ll need to complete QUT SSO + 2FA manually. After that, Playwright stores a session so most submissions won’t need re-auth, but QUT may force re-login (and 2FA) more frequently than before.
+## Use
 
-## 🔄 How It Works
+```bash
+gradescope init
+gradescope login
+gradescope submit
+```
 
-1. **🔐 Authenticates with QUT SSO** - Handles university login automatically (using Playwright)
-2. **🎯 Navigates to Gradescope** - Finds your course and assignment using smart matching
-3. **📦 Bundles your files** - Creates submission zip (respects .gitignore)
-4. **⬆️ Submits automatically** - Handles uploads and form submission
-5. **📊 Shows your grade** - Displays results when available
+`bundle` (zip only), `logout`, `validate`, `doctor`, `hooks` are there when you need them.
 
-Everything runs locally using browser automation. No data leaves your machine except for the normal submission to Gradescope.
+## Why browser login (not passwords in the CLI)
 
-## ⚙️ Basic Configuration
+QUT SSO requires **2FA**. Automating username/password breaks often (selector changes, extra prompts) and means storing credentials on disk — which most people don't want for a coursework helper.
 
-Create `gradescope.yml` in your project:
+Instead you run **`gradescope login` once**: a real browser window, you sign in and complete 2FA yourself. We save the session under `~/.cache/qut_gradescope` (cookies/profile, same idea as staying logged in on Chrome). Later **`gradescope submit`** reuses that — no password prompts, no secrets in `gradescope.yml`.
+
+Headless submit only works if that session already exists; otherwise the CLI tells you to log in first.
+
+## Config (`gradescope.yml`)
+
 ```yaml
-# Required: Course and assignment details 
-course: cab201              # Course code (must partially match Gradescope course name)
-assignment: t6q1            # Assignment name (must partially match Gradescope assignment name)
-
-# Optional: Submission settings
-zip_name: submission.zip    # Name of the zip file to create and submit
-bundle:                     # File patterns to include in submission
-  - "*"                    # Everything (respects .gitignore)
-  # - "*.py"               # All Python files
-  # - "*.cpp"              # All C++ files
-  # - "*.h"                # All header files
-  # - "src/**/*"           # Everything in src directory
-
-# Optional: Behaviour settings
-notify_when_graded: true    # Wait for and display grade (default: true)
-headless: false             # Run browser in background (default: false)
-always_fresh_login: false   # Always login fresh
-manual_login: false         # Open browser for manual login 
-no_session_save: false      # Don't save credentials to session env vars
+course: "cab201"
+assignment: "t6q1"
+zip_name: submission.zip
+include:
+  - "*.py"
+notify_when_graded: true
+headless: false
 ```
 
-## 🔗 Automation Options
+`course` / `assignment` are partial matches on Gradescope. `include` is globs (`bundle` still works for older configs). In a git repo, files come from `git ls-files` so ignored junk doesn't end up in the zip.
 
-**🪝 Git Hooks** (submit to Gradescope before/after every commit):
+## Automation
+
+**Git hooks** (on your machine — session stays local):
+
 ```bash
-gradescope hooks  # Interactive setup
+gradescope hooks --install pre-commit --quick
 ```
 
-**🤖 GitHub Actions** (cloud automation):
-[View on Github Marketplace](https://github.com/marketplace/actions/qut-gradescope-autosubmission)
+**GitHub Actions** in this repo only runs tests on push/PR. Cloud auto-submit workflows were removed: exporting a browser session into CI was fragile and fought 2FA. Hooks or a local `gradescope submit` are the intended loop.
 
-## 📚 Documentation
+## Publishing to PyPI
 
-- **[Command Reference](CLI_REFERENCE.md)** - Complete command guide with examples
-- **[Credential Management](CREDENTIALS.md)** - Security options and setup
+Releases use [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) via `.github/workflows/python-publish.yml`:
 
-## ⚠️ Important Notes
+1. Bump `version` in `pyproject.toml` (must match the GitHub release tag, e.g. `v2.0.0`).
+2. On GitHub: **Releases → Draft a new release** → tag `v2.0.0` → publish.
+3. The workflow builds the wheel/sdist and uploads to PyPI.
 
-**Current Status:**
-- ✅ **PyPI Release** - Available on PyPI
-- ✅ **Stable Features** - Core submission functionality is reliable and tested
+Manual publish (if you prefer): `python -m build` then `twine upload dist/*`.
 
-**Usage Responsibility:**
-- This tool is provided "as-is" for legitimate academic use
-- Users are responsible for complying with QUT academic integrity policies
-- Avoid excessive submissions that may trigger rate limiting on QUT SSO
-- Use session persistence (default) to minimize login requests
+## Requirements
 
-**Limitations:**
-- Requires QUT SSO access and Gradescope course enrollment
-- May break if QUT or Gradescope significantly change their interfaces
-- Some specialized assignment types may not be supported
+Python 3.8+, QUT Gradescope access, Chromium (via Playwright).
 
-## 📋 Requirements
+## Changelog
 
-- Python 3.8+
-- QUT student account with Gradescope access
-- Internet connection for initial setup and submissions
+### 2.0.0
 
-## 🔧 Troubleshooting
+- **Auth:** `gradescope login` / `logout` with a saved browser profile (QUT 2FA handled by you in the browser once). Removed password prompts, `credentials` command, and username/password CLI/env options.
+- **CLI:** Slimmer surface; orange Rich output; fixed step markup that leaked `/cyan`.
+- **Config:** `include` globs; clearer `gradescope init` template.
+- **Bundling:** `git ls-files` when in a repo; skips deleted paths still in the index.
+- **CI:** Pytest on push/PR; removed GitHub Action submit workflows.
+- **Tests:** `pytest` suite under `tests/`.
 
-**Common issues:**
-- **Login failures:** Use `gradescope credentials` to reconfigure
-- **Assignment not found:** Check course code and assignment name in config matches Gradescope
-- **Browser issues:** Run `gradescope doctor` for system diagnostics
+### 1.0.5
 
-For detailed troubleshooting, see the [Command Reference](CLI_REFERENCE.md) or run `gradescope --help`.
+- README: QUT 2FA called out explicitly.
+- Removed scheduled-submit workflow.
+
+### 1.0.4
+
+- Python 3.8 compatibility fix (`Optional` typing in credentials helper).
+
+### 1.0.3
+
+- Clearer errors for wrong username/password.
+- Headless/SSH: link to submission page when the browser can't stay open.
+
+### 1.0.2
+
+- Maintenance release (tagged on GitHub).
+
+### 1.0.1
+
+- First public PyPI release.
+- `python-publish.yml` for release-triggered uploads.
+- Rich-based CLI, Playwright automation, `gradescope.yml` config, git hooks, optional GitHub Action submit.
+
+### Pre-1.0.1
+
+Early development on TestPyPI (`1.0.x` / `1.1.x` dev versions): core CLI, bundling, and Gradescope automation before the stable 1.0 line.
