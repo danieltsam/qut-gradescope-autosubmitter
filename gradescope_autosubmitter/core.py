@@ -485,8 +485,7 @@ async def interactive_login(clear_first: bool = False) -> None:
     page = await context.new_page()
     try:
         await wait_for_gradescope_login(page)
-        log_info("Session saved. Press Enter to close the browser.")
-        await asyncio.get_event_loop().run_in_executor(None, input)
+        log_success("Session saved — browser closed. Run gradescope submit when ready.")
     finally:
         try:
             await context.close()

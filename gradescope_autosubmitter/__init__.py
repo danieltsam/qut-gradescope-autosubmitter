@@ -10,7 +10,7 @@ try:
     __version__ = importlib.metadata.version("qut-gradescope-autosubmitter")
 except importlib.metadata.PackageNotFoundError:
     # Fallback for development mode
-    __version__ = "2.0.0-dev"
+    __version__ = "2.0.1-dev"
 
 __author__ = "Daniel Sam"
 __email__ = "daniel.sam@gmx.com"

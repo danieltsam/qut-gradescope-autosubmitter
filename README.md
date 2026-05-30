@@ -89,6 +89,10 @@ Python 3.8+, QUT Gradescope access, Chromium (via Playwright).
 
 ## Changelog
 
+### 2.0.1
+
+- `gradescope login` closes the browser automatically after SSO (no Enter prompt).
+
 ### 2.0.0
 
 - Browser session auth (`login` / saved profile) — 2FA handled by you once in the browser.
