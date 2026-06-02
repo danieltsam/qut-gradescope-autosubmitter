@@ -446,7 +446,6 @@ class GradescopeSubmitter:
                 task = progress.add_task("Checking grade", total=None)
 
                 for _ in range(max_attempts):
-                    await page.reload()
                     grade_el = await page.query_selector(grade_selector)
 
                     if grade_el:
